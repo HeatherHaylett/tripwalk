@@ -1,4 +1,4 @@
-import { boolean, pgEnum, pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, pgEnum, pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
     userId: uuid('user_id').primaryKey(),
@@ -34,7 +34,12 @@ export const publicTrips = pgTable('public_trips', {
     destination: text('destination').notNull(),
     publishedAt: timestamp('published_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+    // /publicTrips cursor pagination sorts on (updatedAt, tripId) — see
+    // architecture.md §6/§8. Without this, it degrades to a table scan as
+    // the table grows. Don't drop either column from the index.
+    index('public_trips_updated_at_trip_id_idx').on(table.updatedAt, table.tripId),
+]);
 
 export const bookmarks = pgTable('bookmarks', {
     bookmarkId: uuid('bookmark_id').primaryKey(),
