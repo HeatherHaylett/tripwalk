@@ -1,0 +1,35 @@
+{
+  "name": "@tripwalk/client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "test": "jest",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nozbe/watermelondb": "^0.25.5",
+    "@react-native-community/netinfo": "^11.3.0",
+    "expo": "^46.0.21",
+    "fastify": "5.12.5",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "vitest": "4.1.11",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.24.0",
+    "@testing-library/react-native": "14.0.1",
+    "@types/react": "^19.0.0",
+    "eslint": "^8.57.0",
+    "jest-expo": "~57.0.0",
+    "typescript": "^5.4.0"
+  },
+  "jest": {
+    "preset": "jest-expo"
+  }
+}

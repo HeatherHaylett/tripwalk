@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Tripwalk",
+    "slug": "tripwalk",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": [],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {}
+  }
+}

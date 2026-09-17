@@ -1,0 +1,14 @@
+{
+  "name": "tripwalk",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "client": "npm run start --workspace=client",
+    "server": "npm run dev --workspace=server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  }
+}
