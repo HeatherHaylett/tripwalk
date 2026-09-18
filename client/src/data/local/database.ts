@@ -12,7 +12,7 @@ export const schema = appSchema({
       columns: [
         { name: 'trip_id', type: 'string', isIndexed: true }, // client-generated UUID
         { name: 'owner_id', type: 'string' },
-        { name: 'name', type: 'string' },
+        { name: 'trip_name', type: 'string' },
         { name: 'destination', type: 'string' },
         { name: 'is_public', type: 'boolean' },
         { name: 'client_created_at', type: 'number' },
@@ -39,7 +39,7 @@ export const schema = appSchema({
       columns: [
         { name: 'trip_id', type: 'string', isIndexed: true },
         { name: 'owner_id', type: 'string' },
-        { name: 'name', type: 'string' },
+        { name: 'trip_name', type: 'string' },
         { name: 'destination', type: 'string' },
         { name: 'updated_at', type: 'number' },
         { name: 'last_viewed_at', type: 'number' }, // drives LRU eviction

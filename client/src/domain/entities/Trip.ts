@@ -6,7 +6,7 @@ export type SyncStatus = 'pending' | 'synced' | 'failed';
 export interface Trip {
   tripId: string; // client-generated UUID — see architecture.md §5 (idempotent creates)
   ownerId: string;
-  name: string;
+  tripName: string;
   destination: string;
   isPublic: boolean;
   clientCreatedAt: number;
@@ -15,6 +15,6 @@ export interface Trip {
 }
 
 export interface NewTripInput {
-  name: string;
+  tripName: string;
   destination: string;
 }

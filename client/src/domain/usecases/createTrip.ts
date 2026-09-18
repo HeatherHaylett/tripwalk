@@ -17,7 +17,7 @@ export async function createTrip(
 }
 
 function validateTripInput(input: NewTripInput): void {
-  if (!input.name.trim()) {
+  if (!input.tripName.trim()) {
     throw new Error('Trip name is required');
   }
 }
