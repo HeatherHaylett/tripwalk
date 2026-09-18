@@ -5,10 +5,29 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "plugins": [],
+    "plugins": [
+      [
+        "@lovesworking/watermelondb-expo-plugin-sdk-52-plus"
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "pickFirst": [
+                "**/libc++_shared.so"
+              ]
+            }
+          }
+        }
+      ]
+    ],
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.heatherhaylett.tripwalk"
     },
-    "android": {}
+    "android": {
+      "package": "com.heatherhaylett.tripwalk"
+    }
   }
 }
