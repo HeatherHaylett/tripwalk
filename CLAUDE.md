@@ -19,7 +19,7 @@ Read `architecture.md` §10 ("Explicitly rejected approaches") before reintroduc
 - Zustand — UI/session state only (active tab, form drafts, auth token, network status). Never trip/itinerary data.
 - Fastify + TypeScript — REST API server, self-hosted (chosen over Express for TS-first ergonomics and built-in schema validation; chosen over Supabase to keep full control of the custom `/sync` batch endpoint and scoping logic)
 - Postgres — server database (chosen over MySQL: better free-tier hosting options for a hobby project as of 2026 — e.g. Neon — plus built-in full-text search if `discovery` ends up needing it, and Row Level Security as a second layer of defense on top of app-level user-scoping)
-- Testing: `jest-expo` preset (Expo's recommended Jest setup, matched to the SDK) for the client; Vitest for the Fastify server
+- Testing: `jest-expo` preset (Expo's recommended Jest setup, matched to the SDK) for the client; Vitest for the Fastify server, run against a dedicated Neon `test` branch (not a mock, not local Postgres) — see `README.md`'s Testing section for why and for one-time setup
 
 **On dependency versions generally:** for Expo-ecosystem packages, prefer `npx expo install <package>` over manually adding a version to `package.json` — it resolves against Expo's SDK compatibility matrix and avoids the kind of peer-dependency mismatch this project has already hit once (a hand-pinned `@testing-library/react-native` version pulling in a `react-test-renderer` peer that didn't match the pinned React version). Hand-pin only for non-Expo packages Expo doesn't manage.
 
