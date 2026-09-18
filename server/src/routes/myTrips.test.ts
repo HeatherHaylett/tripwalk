@@ -108,6 +108,37 @@ describe('POST /myTrips', async () => {
 
         expect(response.statusCode).toEqual(400)
     })
+
+    test("POST /myTrips ignores an ownerId in the request body and uses the header instead", async () => {
+        const TEST_USER_ID = await createUser("Chris");
+        const TEST_OWNER_ID = crypto.randomUUID();
+        const TRIP_ID = crypto.randomUUID();
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/myTrips',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Id': TEST_USER_ID
+            },
+            body: {
+                ownerId: TEST_OWNER_ID,
+                tripId: TRIP_ID,
+                tripName: "Second Trip",
+                destination: "Philadelphia, USA",
+                clientCreatedAt: "2026-09-17T19:40:00.000Z",
+            }
+        })
+        
+        expect(response.json()).toMatchObject({
+            tripId: TRIP_ID,
+            ownerId: TEST_USER_ID,
+            tripName: "Second Trip",
+            destination: "Philadelphia, USA",
+            isPublic: false,
+            clientCreatedAt: "2026-09-17T19:40:00.000Z",
+        })
+    })
 });
 
 
