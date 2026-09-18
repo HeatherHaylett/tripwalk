@@ -5,7 +5,7 @@ import { Trip, NewTripInput } from '../entities/Trip';
 // data/repositories/TripRepositoryImpl.ts and is wired in via core/di/container.ts.
 // See architecture.md §3.
 export interface TripRepository {
-  create(input: NewTripInput): Promise<Trip>;
+  create(input: NewTripInput, ownerId: string): Promise<Trip>;
   update(tripId: string, changes: Partial<NewTripInput>): Promise<Trip>;
   delete(tripId: string): Promise<void>;
   getById(tripId: string): Promise<Trip | null>;

@@ -66,7 +66,8 @@ tripwalk/
 │       │       └── syncEngine.ts
 │       └── core/
 │           ├── di/container.ts
-│           └── network/NetworkMonitor.ts
+│           ├── network/NetworkMonitor.ts
+│           └── session/sessionStore.ts  # temporary dev-only "current user" stub, mirrors authStub.ts
 └── server/
     ├── package.json  # @tripwalk/server
     ├── tsconfig.json
@@ -98,3 +99,5 @@ New files should land in the matching folder above — don't invent a parallel s
 Auth method, discovery/search UX, and the trip-detail UI (time-slotted + unsorted items) are still undecided. Don't assume a specific implementation for these — ask or flag it rather than guessing.
 
 **Interim auth stub:** `server/src/plugins/authStub.ts` is a temporary, dev-only placeholder — it trusts an unverified `x-user-id` header and fails closed (401) if it's missing, purely so route development (invariant #3's user-scoping) isn't blocked while auth is undecided. It is not real authentication. Every protected route currently depends on it for `request.userId`. Replace only that one hook when auth is decided — route handlers themselves shouldn't need to change.
+
+**Client-side counterpart:** `client/src/core/session/sessionStore.ts` mirrors the same idea — a hardcoded placeholder `userId` (Zustand store) standing in for "the current user" since there's no login flow yet. `ownerId` is deliberately kept out of `NewTripInput` and passed as an explicit parameter through `createTrip` and `TripRepository.create` instead — identity should never live inside the same object as arbitrary user-typed form data, same principle the server applies to `ownerId` in `POST /myTrips`.
