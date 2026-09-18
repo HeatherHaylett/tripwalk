@@ -65,5 +65,5 @@ The app is best thought of as **"Pinterest for trip planning"** — a place to c
 
 - **Bookmark staleness:** bookmarks reflect the owner's *last published* version of a trip, not live edits. May need a "last updated" indicator on bookmarked trips to make this visible rather than silent.
 - **Discovery:** how users actually find other people's trips to browse — search, explore feed, following — left open during design.
-- **Auth method:** underlying account auth (email/password vs. social login vs. guest) not yet decided; biometric login (Face ID/Touch ID) wanted as a fast-unlock layer on top of whichever is chosen.
+- **Auth method:** underlying account auth (email/password vs. social login vs. guest) not yet decided; biometric login (Face ID/Touch ID) wanted as a fast-unlock layer on top of whichever is chosen. (In the meantime, `server/src/plugins/authStub.ts` is a temporary dev-only placeholder — an unverified `x-user-id` header — used only to unblock server route development; it is not a candidate answer to this open question.)
 - **Trip detail UI:** exact visual design for a trip containing both time-slotted and unsorted items is undecided — needs a design pass.

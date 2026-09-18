@@ -86,7 +86,7 @@ Steps 1 and 2 **must be a single atomic WatermelonDB batched transaction** (e.g.
 
 ## 6. Server architecture
 
-- **API layer** — REST. All queries scoped to the authenticated user; this is the actual enforcement point for the privacy NFR — never rely on the client to only request its own data.
+- **API layer** — REST. All queries scoped to the authenticated user; this is the actual enforcement point for the privacy NFR — never rely on the client to only request its own data. **Current implementation note:** since auth method is still undecided (PRD §7), `server/src/plugins/authStub.ts` is a temporary dev-only stand-in — it trusts an unverified `x-user-id` header to populate `request.userId` and 401s if it's missing. It exists only so route handlers can be built against a real `request.userId` today; swapping in real auth later should only mean replacing that one hook.
 - **`publicTrips`** — a **separate, denormalized table**, not a filtered view of `trips`. Chosen over a single-table-with-`isPublic`-flag design specifically for scale: browse traffic (high-read, paginated, recency-ordered, hit by every user) and owner CRUD (low-volume, point-lookup-by-ID) are different enough access patterns that separating them keeps both fast as the dataset grows.
 - **`bookmarks`** — lightweight pointer table: `userId` + `publicTripId` + `bookmarkedAt`. No trip content duplicated here — the client already caches the full trip locally (see §7).
 
@@ -102,7 +102,7 @@ users
 trips
   tripId          UUID (client-generated, primary key — see idempotent creates, §5)
   ownerId         UUID (references users)
-  name            string
+  tripName        string
   destination     string
   isPublic        boolean
   clientCreatedAt timestamp   -- when the user created it, possibly offline
@@ -111,7 +111,7 @@ trips
 publicTrips
   tripId       UUID (same ID as the trips row it was copied from)
   ownerId      UUID (references users)
-  name         string
+  tripName     string
   destination  string
   publishedAt  timestamp   -- set once, on first publish only
   updatedAt    timestamp   -- updates on every republish; the /publicTrips

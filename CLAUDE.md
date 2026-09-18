@@ -72,6 +72,10 @@ tripwalk/
     ├── tsconfig.json
     └── src/
         ├── index.ts   # Fastify entry point
+        ├── env.ts     # loads ../.env.local — must be the first import in index.ts
+        ├── db/        # db.ts (Drizzle client), schema.ts
+        ├── plugins/   # Fastify hooks/decorators that aren't routes, e.g. authStub.ts
+        ├── types/     # ambient .d.ts module augmentation (e.g. FastifyRequest.userId)
         └── routes/    # /myTrips, /sync, /publicTrips, /bookmarks
 ```
 
@@ -92,3 +96,5 @@ New files should land in the matching folder above — don't invent a parallel s
 ## Open questions (see `PRD.md` §7)
 
 Auth method, discovery/search UX, and the trip-detail UI (time-slotted + unsorted items) are still undecided. Don't assume a specific implementation for these — ask or flag it rather than guessing.
+
+**Interim auth stub:** `server/src/plugins/authStub.ts` is a temporary, dev-only placeholder — it trusts an unverified `x-user-id` header and fails closed (401) if it's missing, purely so route development (invariant #3's user-scoping) isn't blocked while auth is undecided. It is not real authentication. Every protected route currently depends on it for `request.userId`. Replace only that one hook when auth is decided — route handlers themselves shouldn't need to change.
