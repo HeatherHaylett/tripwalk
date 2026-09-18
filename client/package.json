@@ -12,13 +12,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@lovesworking/watermelondb-expo-plugin-sdk-52-plus": "^1.0.3",
     "@nozbe/watermelondb": "^0.25.5",
     "@react-native-community/netinfo": "^11.3.0",
-    "expo": "^46.0.21",
-    "fastify": "5.12.5",
+    "expo": "^57.0.0",
+    "expo-build-properties": "~57.0.21",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "vitest": "4.1.11",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
