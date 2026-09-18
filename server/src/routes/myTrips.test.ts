@@ -60,7 +60,7 @@ describe('POST /myTrips', async () => {
             isPublic: false,
             clientCreatedAt: "2026-09-17T19:40:00.000Z",
         })
-    })
+    });
 
     test("POST /myTrips creates a new trip for user B", async () => {
         const TEST_USER_ID_B = await createUser("Chris");
@@ -88,8 +88,27 @@ describe('POST /myTrips', async () => {
             isPublic: false,
             clientCreatedAt: "2026-09-17T19:40:00.000Z",
         })
+    });
+
+    test("POST /myTrips returns 400 on a missing required field", async () => {
+        const TEST_USER_ID = await createUser("Chris");
+        const response = await app.inject({
+            method: 'POST',
+            url: '/myTrips',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Id': TEST_USER_ID
+            },
+            body: {
+                tripName: "Second Trip",
+                destination: "Philadelphia, USA",
+                clientCreatedAt: "2026-09-17T19:40:00.000Z",
+            }
+        })
+
+        expect(response.statusCode).toEqual(400)
     })
-})
+});
 
 
 describe('GET /myTrips', () => {
@@ -155,7 +174,7 @@ describe('GET /myTrips', () => {
             serverCreatedAt: expect.any(String),
         }])
     });
-})
+});
 
 describe("unauthenticated requests", () => {
     test("GET /myTrips returns 401 without an X-User-Id header", async () => {
@@ -181,7 +200,7 @@ describe("unauthenticated requests", () => {
 
         expect(response.statusCode).toEqual(401);
     });
-})
+});
 
 
 
