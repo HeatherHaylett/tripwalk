@@ -10,6 +10,7 @@ export type ItemType =
 // optionally drag a card into a slot — see PRD.md user story #2 and
 // architecture.md §6 for why this is nullable rather than required.
 export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | null;
+export type SyncStatus = 'pending' | 'synced' | 'failed';
 
 export interface ItineraryItem {
   itemId: string; // client-generated UUID
@@ -19,7 +20,7 @@ export interface ItineraryItem {
   location: string;
   attachment: string | null; // a URL only — never a file/blob, see architecture.md §5
   timeOfDay: TimeOfDay;
-  syncStatus: 'pending' | 'synced' | 'failed'; // client-only
+  syncStatus: SyncStatus; // client-only
 }
 
 export interface NewItineraryItemInput {
