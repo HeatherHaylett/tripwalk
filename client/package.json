@@ -14,8 +14,8 @@
   "dependencies": {
     "@lovesworking/watermelondb-expo-plugin-sdk-52-plus": "^1.0.3",
     "@nozbe/watermelondb": "^0.25.5",
-    "@react-native-community/netinfo": "^11.3.0",
-    "expo": "^57.0.0",
+    "@react-native-community/netinfo": "12.0.1",
+    "expo": "^57.0.9",
     "expo-build-properties": "~57.0.21",
     "react": "19.2.3",
     "react-native": "0.86.3",
