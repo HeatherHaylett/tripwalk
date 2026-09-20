@@ -42,7 +42,10 @@ src/
 ├── data/
 │   ├── repositories/     # ONLY layer that knows WatermelonDB/fetch exist
 │   ├── local/
-│   │   ├── database.ts   # WatermelonDB schema/setup
+│   │   ├── database.ts   # WatermelonDB schema only (appSchema/tableSchema)
+│   │   ├── watermelon.ts # SQLiteAdapter + Database instance — split from
+│   │   │                 # database.ts to match WatermelonDB's own Setup
+│   │   │                 # docs (schema file vs. adapter/instance file)
 │   │   └── models/
 │   ├── remote/           # REST API client
 │   └── sync/

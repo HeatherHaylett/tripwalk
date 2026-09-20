@@ -58,7 +58,8 @@ tripwalk/
 │       ├── data/
 │       │   ├── repositories/  # ONLY layer that knows WatermelonDB/fetch exist
 │       │   ├── local/
-│       │   │   ├── database.ts
+│       │   │   ├── database.ts   # schema only
+│       │   │   ├── watermelon.ts # SQLiteAdapter + Database instance
 │       │   │   └── models/
 │       │   ├── remote/
 │       │   └── sync/

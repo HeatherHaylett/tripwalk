@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 
-import { schema } from './database';
+import { schema } from './schema';
 import { Bookmark } from './models/Bookmark';
 import { ItineraryItem } from './models/ItineraryItem';
 import { OutboxEntry } from './models/OutboxEntry';
