@@ -2,6 +2,12 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // Decorated WatermelonDB model fields (data/local/models/*) are never
+    // initialized in a constructor or with "!" — Babel's TS transform
+    // rejects "!" on a decorated field ("Definitely assigned fields cannot
+    // be initialized here"), so the decorator itself is what guarantees
+    // the value instead. This turns off just that one strict sub-check.
+    "strictPropertyInitialization": false,
     "experimentalDecorators": true,
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
