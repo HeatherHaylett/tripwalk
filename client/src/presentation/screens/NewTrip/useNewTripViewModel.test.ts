@@ -38,10 +38,11 @@ export class TripRepositoryTest implements TripRepository {
   }
 }
 
-const tripRepositoryTest: TripRepositoryTest = new TripRepositoryTest();
 const ownerId = useSessionStore.getState().userId;
 
 test('submitting valid input calls through with the right ownerId and input shape.', async () => {
+  const tripRepositoryTest: TripRepositoryTest = new TripRepositoryTest();
+
   const { result } = await renderHook(() =>
     useNewTripViewModel(tripRepositoryTest),
   );
@@ -58,4 +59,21 @@ test('submitting valid input calls through with the right ownerId and input shap
     destination: 'Tokyo',
   });
   expect(tripRepositoryTest.lastOwnerId).toBe(ownerId);
+});
+
+test('an empty/whitespace tripName surfaces the existing validation error without reaching the repository.', async () => {
+  const tripRepositoryTest: TripRepositoryTest = new TripRepositoryTest();
+  const { result } = await renderHook(() =>
+    useNewTripViewModel(tripRepositoryTest),
+  );
+  await act(() => {
+    result.current.setTripName('');
+    result.current.setDestination('Tokyo');
+  });
+
+  await act(async () => {
+    await result.current.handleSubmit();
+  });
+  expect(result.current.error).toBe('Trip name is required');
+  expect(tripRepositoryTest.lastOwnerId).toBe('');
 });
