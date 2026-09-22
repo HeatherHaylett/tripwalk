@@ -89,6 +89,14 @@ New files should land in the matching folder above — don't invent a parallel s
 - Reactive queries, not one-time fetches, for anything shown from WatermelonDB — this is what makes sync-status badges and background sync updates appear without manual refresh.
 - No inline objects/functions passed to `renderItem` in `FlatList`/`FlashList` — use `useMemo`/`useCallback` to keep list rows from re-rendering unnecessarily.
 
+## Testing
+
+- **Write the failing test first for new logic** — new `TripRepository` methods, new use cases, sync/outbox logic. Implement only after the test fails for the right reason.
+- **Retrofitting tests onto already-working code is coverage, not TDD.** Do it — existing untested code (e.g. `TripRepositoryImpl.create`, `createTrip`) is still worth covering — but don't call it TDD, and don't let "tests can come later" become the default for genuinely new work just because retrofitting is acceptable for old work.
+- **Don't mock what the test is meant to verify.** Same rule the server already follows (`architecture.md` §10: no mocked Postgres client in `/myTrips` route tests, because user-scoping and the FK constraint are database-level guarantees a mock can't prove) — applied client-side:
+  - `data/repositories/*` tests exercise a real WatermelonDB instance via an injectable adapter (in-memory for tests — WatermelonDB's own `LokiJSAdapter`, since `SQLiteAdapter` is native-only and can't run under Jest), not a hand-rolled repository double.
+  - `domain/usecases/*` tests are the one place a fake `TripRepository` is correct, not a shortcut — the whole point of depending on the repository *interface* (see the layering rule above) is that use-case logic is verifiable without a real database.
+
 ## When adding a feature
 
 1. Check `PRD.md` — is this in scope, a non-goal, or a "future idea"? If it's a listed non-goal, confirm with the user before building it.
