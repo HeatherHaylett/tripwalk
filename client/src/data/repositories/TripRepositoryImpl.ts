@@ -5,7 +5,7 @@ import { Database } from '@nozbe/watermelondb';
 import * as Crypto from 'expo-crypto';
 
 export class TripRepositoryImpl implements TripRepository {
-  database: Database;
+  private readonly database: Database;
   constructor(database: Database) {
     this.database = database;
   }
