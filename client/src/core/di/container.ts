@@ -1,11 +1,10 @@
 import { TripRepositoryImpl } from '@/data/repositories/TripRepositoryImpl';
 import { TripRepository } from '@/domain/usecases/TripRepository';
-import { Database } from '@nozbe/watermelondb';
+import { createDatabase } from '../../data/local/watermelon';
+import type { DatabaseAdapter } from '@nozbe/watermelondb/adapters/type';
 
-export const tripRepository: TripRepository = new TripRepositoryImpl();
-
-export const createContainer = (adapter) => {
-  return new Database({
-    adapter,
-  });
+export const createContainer = (adapter: DatabaseAdapter) => {
+  const database = createDatabase(adapter);
+  const tripRepository: TripRepository = new TripRepositoryImpl(database);
+  return { database, tripRepository };
 };
