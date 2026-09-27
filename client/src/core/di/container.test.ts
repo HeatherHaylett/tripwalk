@@ -7,9 +7,12 @@ test('construct a real (in-memory) WatermelonDB Database instance without touchi
     schema,
     useWebWorker: false,
     useIncrementalIndexedDB: false,
+    extraLokiOptions: {
+      autosave: false,
+    },
   });
 
-  const database = createContainer(lokiAdapter);
+  const { database } = createContainer(lokiAdapter);
 
   expect(await database.get('trips').query().fetchCount()).toStrictEqual(0);
 });
