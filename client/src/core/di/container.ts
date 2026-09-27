@@ -1,6 +1,6 @@
 import { TripRepositoryImpl } from '@/data/repositories/TripRepositoryImpl';
 import { TripRepository } from '@/domain/usecases/TripRepository';
-import { createDatabase } from '../../data/local/watermelon';
+import { createDatabase } from '@/data/local/watermelon';
 import type { DatabaseAdapter } from '@nozbe/watermelondb/adapters/type';
 
 export const createContainer = (adapter: DatabaseAdapter) => {
