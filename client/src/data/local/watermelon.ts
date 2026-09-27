@@ -8,19 +8,28 @@ import { ItineraryItem } from './models/ItineraryItem';
 import { OutboxEntry } from './models/OutboxEntry';
 import { PublicTripsCache } from './models/PublicTripsCache';
 import { Trip } from './models/Trip';
+import type { DatabaseAdapter } from '@nozbe/watermelondb/adapters/type';
 
-// First, create the adapter to the underlying database:
-const adapter = new SQLiteAdapter({
-  schema,
-  dbName: 'tripwalk',
-  jsi: Platform.OS === 'ios',
-  onSetUpError: (error) => {
-    console.error('Watermelon DB setup failed', error);
-  },
-});
+export const createSQLiteAdapter = () => {
+  return new SQLiteAdapter({
+    schema,
+    dbName: 'tripwalk',
+    jsi: Platform.OS === 'ios',
+    onSetUpError: (error) => {
+      console.error('Watermelon DB setup failed', error);
+    },
+  });
+};
 
-// Then, make a Watermelon database from it!
-export const database = new Database({
-  adapter,
-  modelClasses: [Bookmark, ItineraryItem, OutboxEntry, PublicTripsCache, Trip],
-});
+export const createDatabase = (adapter: DatabaseAdapter) => {
+  return new Database({
+    adapter,
+    modelClasses: [
+      Bookmark,
+      ItineraryItem,
+      OutboxEntry,
+      PublicTripsCache,
+      Trip,
+    ],
+  });
+};
