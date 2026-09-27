@@ -1,13 +1,17 @@
-import { database } from '../local/watermelon';
 import { Trip as TripModel } from '../local/models/Trip';
 import { Trip, NewTripInput } from '../../domain/entities/Trip';
 import { TripRepository } from '../../domain/usecases/TripRepository';
+import { Database } from '@nozbe/watermelondb';
 import * as Crypto from 'expo-crypto';
 
 export class TripRepositoryImpl implements TripRepository {
+  database: Database;
+  constructor(database: Database) {
+    this.database = database;
+  }
   async create(input: NewTripInput, ownerId: string): Promise<Trip> {
-    const newTripModel = await database.write(async () => {
-      return await database.get<TripModel>('trips').create((trip) => {
+    const newTripModel = await this.database.write(async () => {
+      return await this.database.get<TripModel>('trips').create((trip) => {
         trip.tripId = Crypto.randomUUID();
         trip.ownerId = ownerId;
         trip.tripName = input.tripName;
