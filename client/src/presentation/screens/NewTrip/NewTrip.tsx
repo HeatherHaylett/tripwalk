@@ -1,6 +1,6 @@
 import { TextInput, Button, Text, View } from 'react-native';
-import { tripRepository } from '@/core/di/container';
 import { useNewTripViewModel } from './useNewTripViewModel';
+import { tripRepository } from '@/core/di/appContainer';
 
 export default function NewTrip() {
     const { tripName, setTripName, destination, setDestination, error, handleSubmit } =
