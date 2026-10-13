@@ -81,7 +81,7 @@ describe('update', () => {
       destination: 'Tokyo',
     };
     const newTrip = await tripRepository.create(tripInput, ownerId);
-    const updatedTrip = await database.write(async () => {
+    const syncedRecord = await database.write(async () => {
       const tripRecords = await database
         .get<TripModel>('trips')
         .query(Q.where('id', newTrip.tripId))
@@ -95,11 +95,42 @@ describe('update', () => {
 
       return record;
     });
-    expect(updatedTrip.syncState).toEqual('synced');
-    await tripRepository.update(newTrip.tripId, {
+    expect(syncedRecord.syncState).toEqual('synced');
+    const result = await tripRepository.update(newTrip.tripId, {
       tripName: 'Update Trip',
     });
-    expect(updatedTrip.syncState).toEqual('pending');
+    expect(result.syncStatus).toEqual('pending');
+    const record = await database.get<TripModel>('trips').find(newTrip.tripId);
+    expect(record.syncState).toEqual('pending');
+  });
+  test(`sync state is 'synced' updating with empty object`, async () => {
+    const lokiAdapter = createLokiAdapter();
+    const { database, tripRepository } = createContainer(lokiAdapter);
+    const ownerId = useSessionStore.getState().userId;
+    const tripInput = {
+      tripName: 'First Trip',
+      destination: 'Tokyo',
+    };
+    const newTrip = await tripRepository.create(tripInput, ownerId);
+    const syncedRecord = await database.write(async () => {
+      const tripRecords = await database
+        .get<TripModel>('trips')
+        .query(Q.where('id', newTrip.tripId))
+        .fetch();
+      const record = tripRecords[0];
+      if (!record) throw new Error('Trip record not found');
+
+      await record.update((trip) => {
+        trip.syncState = 'synced';
+      });
+
+      return record;
+    });
+    expect(syncedRecord.syncState).toEqual('synced');
+    const result = await tripRepository.update(newTrip.tripId, {});
+    expect(result.syncStatus).toEqual('synced');
+    const record = await database.get<TripModel>('trips').find(newTrip.tripId);
+    expect(record.syncState).toEqual('synced');
   });
 });
 
