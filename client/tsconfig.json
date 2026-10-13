@@ -19,5 +19,5 @@
       "@/test_utils": ["src/test_utils"]
     }
   },
-  "include": ["src", "index.js"]
+  "include": ["src", "index.js", "jestSetup.ts"]
 }
