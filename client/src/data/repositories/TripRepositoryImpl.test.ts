@@ -113,7 +113,7 @@ describe('update', () => {
     const record = await database.get<TripModel>('trips').find(newTrip.tripId);
     expect(record.syncState).toEqual('pending');
   });
-  test(`sync state is 'synced' updating with empty object`, async () => {
+  test(`sync state is 'synced' updating with empty object or undefined value`, async () => {
     const lokiAdapter = createLokiAdapter();
     const { database, tripRepository } = createContainer(lokiAdapter);
     const ownerId = useSessionStore.getState().userId;
@@ -137,8 +137,16 @@ describe('update', () => {
       return record;
     });
     expect(syncedRecord.syncState).toEqual('synced');
-    const result = await tripRepository.update(newTrip.tripId, {});
-    expect(result.syncStatus).toEqual('synced');
+    const resultEmptyObj = await tripRepository.update(newTrip.tripId, {});
+    expect(resultEmptyObj.syncStatus).toEqual('synced');
+    const resultDestUndefined = await tripRepository.update(newTrip.tripId, {
+      destination: undefined,
+    });
+    expect(resultDestUndefined.syncStatus).toEqual('synced');
+    const resultNameUndefined = await tripRepository.update(newTrip.tripId, {
+      tripName: undefined,
+    });
+    expect(resultNameUndefined.syncStatus).toEqual('synced');
     const record = await database.get<TripModel>('trips').find(newTrip.tripId);
     expect(record.syncState).toEqual('synced');
   });
