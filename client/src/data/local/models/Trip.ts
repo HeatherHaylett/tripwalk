@@ -5,7 +5,6 @@ import { SyncStatus } from '../../../domain/entities/Trip';
 export class Trip extends Model {
   static table = 'trips'; // must match the table name in database.ts EXACTLY
 
-  @field('trip_id') tripId: string;
   @field('owner_id') ownerId: string;
   @text('trip_name') tripName: string;
   @text('destination') destination: string;

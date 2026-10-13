@@ -10,7 +10,6 @@ export const schema = appSchema({
     tableSchema({
       name: 'trips',
       columns: [
-        { name: 'trip_id', type: 'string', isIndexed: true }, // client-generated UUID
         { name: 'owner_id', type: 'string' },
         { name: 'trip_name', type: 'string' },
         { name: 'destination', type: 'string' },
