@@ -55,6 +55,10 @@ export class TripRepositoryImpl implements TripRepository {
       const record = tripRecords[0];
       if (!record) return;
       await record.destroyPermanently();
+      // When the outbox queue is built (separate, future work — see
+      // architecture.md §5 and CLAUDE.md invariant #1), the outbox-entry
+      // delete() call joins here, inside this same database.write() block,
+      // so the trip row and its outbox entry commit as one transaction.
     });
   }
   async getById(tripId: string): Promise<Trip | null> {
