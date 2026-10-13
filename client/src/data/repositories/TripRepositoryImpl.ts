@@ -1,7 +1,8 @@
+import { Database } from '@nozbe/watermelondb';
+import { Q } from '@nozbe/watermelondb';
 import { Trip as TripModel } from '../local/models/Trip';
 import { Trip, NewTripInput } from '../../domain/entities/Trip';
 import { TripRepository } from '../../domain/usecases/TripRepository';
-import { Database } from '@nozbe/watermelondb';
 
 export class TripRepositoryImpl implements TripRepository {
   private readonly database: Database;
@@ -46,6 +47,25 @@ export class TripRepositoryImpl implements TripRepository {
     throw new Error('not implemented');
   }
   async getById(tripId: string): Promise<Trip | null> {
-    throw new Error('not implemented');
+    const tripRecords = await this.database
+      .get<TripModel>('trips')
+      .query(Q.where('id', tripId))
+      .fetch();
+    const record = tripRecords[0];
+    if (!record) return null;
+
+    return {
+      tripId: record.id,
+      ownerId: record.ownerId,
+      tripName: record.tripName,
+      destination: record.destination,
+      isPublic: record.isPublic,
+      clientCreatedAt: record.clientCreatedAt.getTime(),
+      serverCreatedAt:
+        record.serverCreatedAt instanceof Date
+          ? record.serverCreatedAt.getTime()
+          : null,
+      syncStatus: record.syncState,
+    };
   }
 }
