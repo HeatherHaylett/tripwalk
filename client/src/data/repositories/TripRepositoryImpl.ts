@@ -47,7 +47,15 @@ export class TripRepositoryImpl implements TripRepository {
     throw new Error('not implemented');
   }
   async delete(tripId: string): Promise<void> {
-    throw new Error('not implemented');
+    await this.database.write(async () => {
+      const tripRecords = await this.database
+        .get<TripModel>('trips')
+        .query(Q.where('id', tripId))
+        .fetch();
+      const record = tripRecords[0];
+      if (!record) return;
+      await record.destroyPermanently();
+    });
   }
   async getById(tripId: string): Promise<Trip | null> {
     const tripRecords = await this.database
