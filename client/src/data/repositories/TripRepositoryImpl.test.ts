@@ -3,7 +3,7 @@ import { createLokiAdapter } from '@/test_utils';
 import { Trip as TripModel } from '../local/models/Trip';
 import { useSessionStore } from '@/core/session/sessionStore';
 import * as Crypto from 'expo-crypto';
-import { Q } from '@nozbe/watermelondb';
+import { Database } from '@nozbe/watermelondb';
 
 test(`Watermelon record's id matches a UUID pattern and equals the returned tripId`, async () => {
   const lokiAdapter = createLokiAdapter();
@@ -24,6 +24,20 @@ test(`Watermelon record's id matches a UUID pattern and equals the returned trip
   );
   expect(tripIds).toEqual([newTrip.tripId]);
 });
+
+// Puts a trip into the 'synced' state, which the repository can't do (create
+// always sets 'pending'), then re-reads it so a silently failed setup can't
+// make a later 'pending' assertion pass vacuously.
+async function markSynced(database: Database, tripId: string) {
+  const record = await database.get<TripModel>('trips').find(tripId);
+  await database.write(() =>
+    record.update((trip) => {
+      trip.syncState = 'synced';
+    }),
+  );
+  const reread = await database.get<TripModel>('trips').find(tripId);
+  expect(reread.syncState).toEqual('synced');
+}
 
 describe('update', () => {
   test('returns the updated trip, with the new name and the old destination', async () => {
@@ -91,21 +105,7 @@ describe('update', () => {
       destination: 'Tokyo',
     };
     const newTrip = await tripRepository.create(tripInput, ownerId);
-    const syncedRecord = await database.write(async () => {
-      const tripRecords = await database
-        .get<TripModel>('trips')
-        .query(Q.where('id', newTrip.tripId))
-        .fetch();
-      const record = tripRecords[0];
-      if (!record) throw new Error('Trip record not found');
-
-      await record.update((trip) => {
-        trip.syncState = 'synced';
-      });
-
-      return record;
-    });
-    expect(syncedRecord.syncState).toEqual('synced');
+    await markSynced(database, newTrip.tripId);
     const result = await tripRepository.update(newTrip.tripId, {
       tripName: 'Update Trip',
     });
@@ -122,22 +122,8 @@ describe('update', () => {
       destination: 'Tokyo',
     };
     const newTrip = await tripRepository.create(tripInput, ownerId);
-    const syncedRecord = await database.write(async () => {
-      const tripRecords = await database
-        .get<TripModel>('trips')
-        .query(Q.where('id', newTrip.tripId))
-        .fetch();
-      const record = tripRecords[0];
-      if (!record) throw new Error('Trip record not found');
-
-      await record.update((trip) => {
-        trip.syncState = 'synced';
-      });
-
-      return record;
-    });
-    expect(syncedRecord.syncState).toEqual('synced');
-    const resultEmptyObj = await tripRepository.update(newTrip.tripId, {});
+    await markSynced(database, newTrip.tripId);
+    const resultEmptyObj =await tripRepository.update(newTrip.tripId, {});
     expect(resultEmptyObj.syncStatus).toEqual('synced');
     const resultDestUndefined = await tripRepository.update(newTrip.tripId, {
       destination: undefined,
