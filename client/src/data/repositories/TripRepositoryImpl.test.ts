@@ -35,14 +35,24 @@ describe('update', () => {
       destination: 'Tokyo',
     };
     const newTrip = await tripRepository.create(tripInput, ownerId);
-    const updatedTrip = await tripRepository.update(newTrip.tripId, {
+    const updatedTripName = await tripRepository.update(newTrip.tripId, {
       tripName: 'Update Trip',
     });
 
-    expect(updatedTrip).toEqual({
+    expect(updatedTripName).toEqual({
       ...newTrip,
       tripName: 'Update Trip',
       destination: 'Tokyo',
+    });
+
+    const updatedTripDestination = await tripRepository.update(newTrip.tripId, {
+      destination: 'Paris',
+    });
+
+    expect(updatedTripDestination).toEqual({
+      ...newTrip,
+      tripName: 'Update Trip',
+      destination: 'Paris',
     });
   });
   test('persists the change to the database', async () => {
