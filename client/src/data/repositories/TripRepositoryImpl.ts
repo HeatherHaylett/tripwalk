@@ -44,7 +44,29 @@ export class TripRepositoryImpl implements TripRepository {
     return toTrip(newTripModel);
   }
   async update(tripId: string, changes: Partial<NewTripInput>): Promise<Trip> {
-    throw new Error('not implemented');
+    const updatedTrip = await this.database.write(async () => {
+      const tripRecords = await this.database
+        .get<TripModel>('trips')
+        .query(Q.where('id', tripId))
+        .fetch();
+      const record = tripRecords[0];
+      if (!record) throw new Error('Trip record not found');
+
+      await record.update((trip) => {
+        if (changes.tripName !== undefined) {
+          trip.tripName = changes.tripName;
+        }
+        if (changes.destination !== undefined) {
+          trip.destination = changes.destination;
+        }
+      });
+      // When the outbox queue is built (separate, future work — see
+      // architecture.md §5 and CLAUDE.md invariant #1), the outbox-entry
+      // update() call joins here, inside this same database.write() block,
+      // so the trip row and its outbox entry commit as one transaction.
+      return record;
+    });
+    return toTrip(updatedTrip);
   }
   async delete(tripId: string): Promise<void> {
     await this.database.write(async () => {
