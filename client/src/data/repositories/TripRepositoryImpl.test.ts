@@ -12,10 +12,12 @@ test(`Watermelon record's id matches a UUID pattern and equals the returned trip
   };
 
   const newTrip = await tripRepository.create(tripInput, ownerId);
-  const trip = await database.get('trips').find(newTrip.tripId);
+  const tripIds = (await database.get('trips').query().fetch()).map(
+    (trip) => trip.id,
+  );
 
-  expect(trip.id).toMatch(
+  expect(newTrip.tripId).toMatch(
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   );
-  expect(trip.id).toBe(newTrip.tripId);
+  expect(tripIds).toEqual([newTrip.tripId]);
 });

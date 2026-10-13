@@ -2,7 +2,7 @@ import { Model } from '@nozbe/watermelondb';
 import { field, text, date } from '@nozbe/watermelondb/decorators';
 
 export class PublicTripsCache extends Model {
-  static table = 'public_trips_cache'; // must match the table name in database.ts EXACTLY
+  static table = 'public_trips_cache'; // must match the table name in schema.ts EXACTLY
 
   @field('owner_id') ownerId: string;
   @text('trip_name') tripName: string;
