@@ -15,7 +15,8 @@
       "@/presentation/*": ["src/presentation/*"],
       "@/domain/*": ["src/domain/*"],
       "@/data/*": ["src/data/*"],
-      "@/core/*": ["src/core/*"]
+      "@/core/*": ["src/core/*"],
+      "@/test_utils": ["src/test_utils"]
     }
   },
   "include": ["src", "index.js"]
