@@ -24,6 +24,14 @@ export class TripRepositoryImpl implements TripRepository {
   constructor(database: Database) {
     this.database = database;
   }
+  private async _findRecordById(id: string): Promise<TripModel | undefined> {
+    const tripRecords = await this.database
+      .get<TripModel>('trips')
+      .query(Q.where('id', id))
+      .fetch();
+    const record = tripRecords[0];
+    return record;
+  }
   async create(input: NewTripInput, ownerId: string): Promise<Trip> {
     const newTripModel = await this.database.write(async () => {
       return await this.database.get<TripModel>('trips').create((trip) => {
@@ -44,11 +52,7 @@ export class TripRepositoryImpl implements TripRepository {
   }
   async update(tripId: string, changes: Partial<NewTripInput>): Promise<Trip> {
     const updatedTrip = await this.database.write(async () => {
-      const tripRecords = await this.database
-        .get<TripModel>('trips')
-        .query(Q.where('id', tripId))
-        .fetch();
-      const record = tripRecords[0];
+      const record = await this._findRecordById(tripId);
       if (!record) throw new Error('Trip record not found');
       if (changes.tripName === undefined && changes.destination === undefined)
         return record;
@@ -71,11 +75,7 @@ export class TripRepositoryImpl implements TripRepository {
   }
   async delete(tripId: string): Promise<void> {
     await this.database.write(async () => {
-      const tripRecords = await this.database
-        .get<TripModel>('trips')
-        .query(Q.where('id', tripId))
-        .fetch();
-      const record = tripRecords[0];
+      const record = await this._findRecordById(tripId);
       if (!record) return;
       await record.destroyPermanently();
       // When the outbox queue is built (separate, future work — see
@@ -85,11 +85,7 @@ export class TripRepositoryImpl implements TripRepository {
     });
   }
   async getById(tripId: string): Promise<Trip | null> {
-    const tripRecords = await this.database
-      .get<TripModel>('trips')
-      .query(Q.where('id', tripId))
-      .fetch();
-    const record = tripRecords[0];
+    const record = await this._findRecordById(tripId);
     if (!record) return null;
 
     return toTrip(record);
