@@ -2,7 +2,6 @@ import { Trip as TripModel } from '../local/models/Trip';
 import { Trip, NewTripInput } from '../../domain/entities/Trip';
 import { TripRepository } from '../../domain/usecases/TripRepository';
 import { Database } from '@nozbe/watermelondb';
-import * as Crypto from 'expo-crypto';
 
 export class TripRepositoryImpl implements TripRepository {
   private readonly database: Database;
@@ -12,7 +11,6 @@ export class TripRepositoryImpl implements TripRepository {
   async create(input: NewTripInput, ownerId: string): Promise<Trip> {
     const newTripModel = await this.database.write(async () => {
       return await this.database.get<TripModel>('trips').create((trip) => {
-        trip.tripId = Crypto.randomUUID();
         trip.ownerId = ownerId;
         trip.tripName = input.tripName;
         trip.destination = input.destination;
@@ -27,7 +25,7 @@ export class TripRepositoryImpl implements TripRepository {
       // so the trip row and its outbox entry commit as one transaction.
     });
     const newTrip = {
-      tripId: newTripModel.tripId,
+      tripId: newTripModel.id,
       ownerId: newTripModel.ownerId,
       tripName: newTripModel.tripName,
       destination: newTripModel.destination,

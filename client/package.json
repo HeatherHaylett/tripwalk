@@ -32,6 +32,9 @@
     "typescript": "^5.4.0"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "setupFiles": [
+      "<rootDir>/jestSetup.ts"
+    ]
   }
 }

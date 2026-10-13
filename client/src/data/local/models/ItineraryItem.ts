@@ -7,9 +7,8 @@ import {
 } from '../../../domain/entities/ItineraryItem';
 
 export class ItineraryItem extends Model {
-  static table = 'itinerary_items'; // must match the table name in database.ts EXACTLY
+  static table = 'itinerary_items'; // must match the table name in schema.ts EXACTLY
 
-  @field('item_id') itemId: string;
   @field('trip_id') tripId: string;
   @text('title') title: string;
   @field('type') type: ItemType;

@@ -28,7 +28,7 @@ Read `architecture.md` §10 ("Explicitly rejected approaches") before reintroduc
 These come directly from `architecture.md` and should not be violated by any change, no matter how small it seems:
 
 1. **Every write goes through one path.** Writing to WatermelonDB and enqueueing the outbox entry must happen in a single atomic transaction — never two separate steps a caller could forget to pair. If you add a new mutation (new use case, new field), it must go through the existing `saveTrip()`-style function, not a bespoke write.
-2. **IDs are client-generated UUIDs, created at write time.** Never introduce a local-ID/server-ID pair or an ID-swap step after sync.
+2. **IDs are client-generated UUIDs, created at write time.** Never introduce a local-ID/server-ID pair or an ID-swap step after sync. On the client, `setGenerator` in `data/local/watermelon.ts` runs before any database is created and makes every WatermelonDB record created on this device get a `Crypto.randomUUID()` as its own `id`; rows copied from the server keep their server ID via a `_raw.id` override in the `create` builder (inside `data/repositories/` only — `_raw` is WatermelonDB-private). Never add a separate self-ID column (e.g. `trip_id` on `trips`) alongside `id`.
 3. **All server queries scoped to the authenticated user.** This is the privacy enforcement point — never rely on client-side filtering to hide private trips.
 4. **`publicTrips` stays a separate table from `trips`**, kept in sync only via the explicit publish action — not a live sync on every edit. See the bookmark-staleness trade-off in `architecture.md` §6 before changing this.
 5. **Attachments are URL strings only.** No file/blob storage. Don't add filesystem or image-handling code for attachments without confirming this has changed.
@@ -47,7 +47,9 @@ tripwalk/
 │   ├── babel.config.js  # decorators plugin, required by WatermelonDB models
 │   ├── tsconfig.json
 │   ├── index.js       # Expo entry point
+│   ├── jestSetup.ts   # Jest setupFiles: mocks expo-crypto's randomUUID with node:crypto (jest-expo automocks it to '')
 │   └── src/
+│       ├── test_utils.ts  # test-only helpers, e.g. createLokiAdapter() for an in-memory WatermelonDB
 │       ├── presentation/
 │       │   ├── App.tsx   # root component (placeholder - no navigation wired yet)
 │       │   ├── screens/<Screen>/<Screen>.tsx + use<Screen>ViewModel.ts
@@ -86,6 +88,8 @@ New files should land in the matching folder above — don't invent a parallel s
 ## Conventions
 
 - Client layers: `presentation/` → `domain/` → `data/`, dependencies point inward only. `domain/usecases/` never imports from `data/` directly — only from repository interfaces. Only `data/repositories/*` talks to WatermelonDB or the network.
+- ID naming: use the built-in `id` on WatermelonDB models (no prefixed self-ID); prefixed names (`tripId`, `itemId`, …) in domain entities and on foreign keys. Repositories map `model.id` ↔ the prefixed name.
+- Local schema changes: bump `version` in `client/src/data/local/schema.ts` on every change, with no migration — pre-release, so WatermelonDB resetting dev databases is expected. **Once the app ships, this flips:** every schema change needs a WatermelonDB migration, because a version bump with no migration wipes users' local data — including unsynced trips still in the outbox.
 - Reactive queries, not one-time fetches, for anything shown from WatermelonDB — this is what makes sync-status badges and background sync updates appear without manual refresh.
 - No inline objects/functions passed to `renderItem` in `FlatList`/`FlashList` — use `useMemo`/`useCallback` to keep list rows from re-rendering unnecessarily.
 

@@ -9,6 +9,10 @@ import { OutboxEntry } from './models/OutboxEntry';
 import { PublicTripsCache } from './models/PublicTripsCache';
 import { Trip } from './models/Trip';
 import type { DatabaseAdapter } from '@nozbe/watermelondb/adapters/type';
+import { setGenerator } from '@nozbe/watermelondb/utils/common/randomId';
+import * as Crypto from 'expo-crypto';
+
+setGenerator(() => Crypto.randomUUID());
 
 export const createSQLiteAdapter = () => {
   return new SQLiteAdapter({

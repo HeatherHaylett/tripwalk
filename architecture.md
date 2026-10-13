@@ -143,6 +143,7 @@ bookmarks
 ### Client schema (WatermelonDB) — differences from server
 
 - `trips` and `itineraryItems` exist as their own separate reactive tables on-device, mirroring the server shape — never nested as JSON blobs inside a parent row. This is required for reactive per-trip queries (`itineraryItems WHERE tripId = ...`) and for the outbox to reference items individually.
+- **Primary keys are named `id` locally.** Every WatermelonDB table uses the model's built-in `id` as its primary key. Rows created on this device get a fresh client-generated UUID (§5) via `setGenerator`; rows copied from the server (cache, bookmarks, restoring own trips on a new device) keep their server ID via a `_raw.id` override in the `create` builder. Either way, the server's `tripId` / `itemId` / `bookmarkId` primary keys appear locally as `id`, with no separate self-ID column. Foreign keys keep their prefixed names (`itineraryItems.tripId`, `bookmarks.publicTripId`). Repositories map `id` ↔ the prefixed name at the domain boundary.
 - `trips` and `itineraryItems` each get one **client-only field with no server equivalent**:
   ```
   syncStatus   enum: pending | synced | failed
@@ -159,6 +160,8 @@ bookmarks
 | Own trips | Local DB is the source of truth. Offline-first, outbox-synced. No "fetch" — always read local. |
 | Browse feed | **Network-first**, fallback to a small WatermelonDB-cached table of the **last 10–20 viewed trips**, LRU-evicted. Fallback is silent (no "stale" indicator) unless the device is **explicitly offline** (checked via `NetInfo`, not inferred from a failed request — a single failed request while technically online should not show an offline banner). |
 | Bookmarks | **Eagerly fully cached the moment the user bookmarks** (fetch full trip immediately, store locally) — guarantees offline availability from that point on. Subsequent views are network-first with that cache as fallback. |
+
+**Cache row identity:** a local `public_trips_cache` row's `id` is the public trip's own `tripId` — not a freshly generated UUID — so "is this trip already cached?" is a single `find`, and the same trip can never be cached twice. (A design choice, not a constraint: WatermelonDB IDs only need to be unique per table, so a cached copy of one of your own trips sharing its `trips` row's `id` is fine.) This is one case of the general rule in §6: rows copied from the server keep their server ID, so the cache-writing repository overrides `setGenerator`'s default inside the `create` builder (`record._raw.id = publicTrip.tripId`). `_raw` is WatermelonDB-private — keep these overrides inside `data/repositories/`. Not built yet: no code writes cache rows as of #12.
 
 ## 8. API surface
 
