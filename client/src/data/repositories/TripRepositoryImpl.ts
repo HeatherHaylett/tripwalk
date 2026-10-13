@@ -1,5 +1,4 @@
-import { Database } from '@nozbe/watermelondb';
-import { Q } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { Trip as TripModel } from '../local/models/Trip';
 import { Trip, NewTripInput } from '../../domain/entities/Trip';
 import { TripRepository } from '../../domain/usecases/TripRepository';

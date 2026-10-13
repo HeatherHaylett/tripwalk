@@ -3,6 +3,7 @@ import { createLokiAdapter } from '@/test_utils';
 import { Trip as TripModel } from '../local/models/Trip';
 import { useSessionStore } from '@/core/session/sessionStore';
 import * as Crypto from 'expo-crypto';
+import { Q } from '@nozbe/watermelondb';
 
 test(`Watermelon record's id matches a UUID pattern and equals the returned tripId`, async () => {
   const lokiAdapter = createLokiAdapter();
@@ -70,6 +71,35 @@ describe('update', () => {
     await expect(
       tripRepository.update(unknownTripId, { tripName: 'X' }),
     ).rejects.toThrow(/not found/i);
+  });
+  test(`sync state is 'pending' after update`, async () => {
+    const lokiAdapter = createLokiAdapter();
+    const { database, tripRepository } = createContainer(lokiAdapter);
+    const ownerId = useSessionStore.getState().userId;
+    const tripInput = {
+      tripName: 'First Trip',
+      destination: 'Tokyo',
+    };
+    const newTrip = await tripRepository.create(tripInput, ownerId);
+    const updatedTrip = await database.write(async () => {
+      const tripRecords = await database
+        .get<TripModel>('trips')
+        .query(Q.where('id', newTrip.tripId))
+        .fetch();
+      const record = tripRecords[0];
+      if (!record) throw new Error('Trip record not found');
+
+      await record.update((trip) => {
+        trip.syncState = 'synced';
+      });
+
+      return record;
+    });
+    expect(updatedTrip.syncState).toEqual('synced');
+    await tripRepository.update(newTrip.tripId, {
+      tripName: 'Update Trip',
+    });
+    expect(updatedTrip.syncState).toEqual('pending');
   });
 });
 
