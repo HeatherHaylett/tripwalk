@@ -5,7 +5,7 @@ import { appSchema, tableSchema } from '@nozbe/watermelondb';
 // sent to the server — see CLAUDE.md invariant #7.
 
 export const schema = appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'trips',
@@ -22,7 +22,6 @@ export const schema = appSchema({
     tableSchema({
       name: 'itinerary_items',
       columns: [
-        { name: 'item_id', type: 'string', isIndexed: true },
         { name: 'trip_id', type: 'string', isIndexed: true },
         { name: 'title', type: 'string' },
         { name: 'type', type: 'string' },
@@ -36,7 +35,6 @@ export const schema = appSchema({
     tableSchema({
       name: 'public_trips_cache',
       columns: [
-        { name: 'trip_id', type: 'string', isIndexed: true },
         { name: 'owner_id', type: 'string' },
         { name: 'trip_name', type: 'string' },
         { name: 'destination', type: 'string' },
@@ -48,7 +46,6 @@ export const schema = appSchema({
     tableSchema({
       name: 'bookmarks',
       columns: [
-        { name: 'bookmark_id', type: 'string', isIndexed: true },
         { name: 'public_trip_id', type: 'string', isIndexed: true },
         { name: 'bookmarked_at', type: 'number' },
       ],
