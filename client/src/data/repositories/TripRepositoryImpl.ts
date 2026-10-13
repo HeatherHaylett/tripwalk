@@ -24,7 +24,7 @@ export class TripRepositoryImpl implements TripRepository {
   constructor(database: Database) {
     this.database = database;
   }
-  private async _findRecordById(id: string): Promise<TripModel | undefined> {
+  private async findRecordById(id: string): Promise<TripModel | undefined> {
     const tripRecords = await this.database
       .get<TripModel>('trips')
       .query(Q.where('id', id))
@@ -52,7 +52,7 @@ export class TripRepositoryImpl implements TripRepository {
   }
   async update(tripId: string, changes: Partial<NewTripInput>): Promise<Trip> {
     const updatedTrip = await this.database.write(async () => {
-      const record = await this._findRecordById(tripId);
+      const record = await this.findRecordById(tripId);
       if (!record) throw new Error('Trip record not found');
       if (changes.tripName === undefined && changes.destination === undefined)
         return record;
@@ -75,7 +75,7 @@ export class TripRepositoryImpl implements TripRepository {
   }
   async delete(tripId: string): Promise<void> {
     await this.database.write(async () => {
-      const record = await this._findRecordById(tripId);
+      const record = await this.findRecordById(tripId);
       if (!record) return;
       await record.destroyPermanently();
       // When the outbox queue is built (separate, future work — see
@@ -85,7 +85,7 @@ export class TripRepositoryImpl implements TripRepository {
     });
   }
   async getById(tripId: string): Promise<Trip | null> {
-    const record = await this._findRecordById(tripId);
+    const record = await this.findRecordById(tripId);
     if (!record) return null;
 
     return toTrip(record);
