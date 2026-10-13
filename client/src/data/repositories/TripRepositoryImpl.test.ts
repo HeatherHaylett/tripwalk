@@ -23,6 +23,38 @@ test(`Watermelon record's id matches a UUID pattern and equals the returned trip
   expect(tripIds).toEqual([newTrip.tripId]);
 });
 
+describe('delete', () => {
+  test('deletes the correct trip', async () => {
+    const lokiAdapter = createLokiAdapter();
+    const { database, tripRepository } = createContainer(lokiAdapter);
+    const ownerId = useSessionStore.getState().userId;
+    const tripInputA = {
+      tripName: 'First Trip',
+      destination: 'Tokyo',
+    };
+    const tripInputB = {
+      tripName: 'Second Trip',
+      destination: 'Rome',
+    };
+
+    const newTripA = await tripRepository.create(tripInputA, ownerId);
+    const newTripB = await tripRepository.create(tripInputB, ownerId);
+    await tripRepository.delete(newTripB.tripId);
+    const tripIds = (await database.get('trips').query().fetch()).map(
+      (trip) => trip.id,
+    );
+    expect(tripIds).not.toContain(newTripB.tripId);
+    expect(tripIds).toEqual([newTripA.tripId]);
+  });
+
+  test('missing id does not throw an error', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    await expect(
+      tripRepository.delete(Crypto.randomUUID()),
+    ).resolves.toBeUndefined();
+  });
+});
+
 describe('getById', () => {
   test('returns the correct trip', async () => {
     const lokiAdapter = createLokiAdapter();
