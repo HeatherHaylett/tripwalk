@@ -29,8 +29,7 @@ export class TripRepositoryImpl implements TripRepository {
       .get<TripModel>('trips')
       .query(Q.where('id', id))
       .fetch();
-    const record = tripRecords[0];
-    return record;
+    return tripRecords[0];
   }
   async create(input: NewTripInput, ownerId: string): Promise<Trip> {
     const newTripModel = await this.database.write(async () => {
