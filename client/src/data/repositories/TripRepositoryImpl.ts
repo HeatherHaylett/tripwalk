@@ -50,7 +50,7 @@ export class TripRepositoryImpl implements TripRepository {
         .fetch();
       const record = tripRecords[0];
       if (!record) throw new Error('Trip record not found');
-
+      if (!changes || Object.keys(changes).length === 0) return record;
       await record.update((trip) => {
         if (changes.tripName !== undefined) {
           trip.tripName = changes.tripName;
@@ -58,6 +58,7 @@ export class TripRepositoryImpl implements TripRepository {
         if (changes.destination !== undefined) {
           trip.destination = changes.destination;
         }
+        trip.syncState = 'pending';
       });
       // When the outbox queue is built (separate, future work — see
       // architecture.md §5 and CLAUDE.md invariant #1), the outbox-entry
