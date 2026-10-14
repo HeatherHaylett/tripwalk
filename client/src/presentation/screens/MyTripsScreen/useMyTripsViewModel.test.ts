@@ -23,3 +23,23 @@ test('Before hook: show user trips from observeAll', async () => {
   );
   await waitFor(() => expect(result.current.myTrips.length).toBe(1));
 });
+
+test('After hook: show user trips from observeAll', async () => {
+  const lokiAdapter = createLokiAdapter();
+  const { tripRepository } = createContainer(lokiAdapter);
+  const ownerId = useSessionStore.getState().userId;
+
+  const { result } = await renderHook(() =>
+    useMyTripsViewModel(tripRepository),
+  );
+  await tripRepository.create(
+    {
+      tripName: 'First Trip',
+      destination: 'Tokyo',
+    },
+    ownerId,
+  );
+  await waitFor(() =>
+    expect(result.current.myTrips[0]?.tripName).toBe('First Trip'),
+  );
+});
