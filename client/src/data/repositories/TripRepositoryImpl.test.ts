@@ -4,6 +4,7 @@ import { Trip as TripModel } from '../local/models/Trip';
 import { useSessionStore } from '@/core/session/sessionStore';
 import * as Crypto from 'expo-crypto';
 import { Database } from '@nozbe/watermelondb';
+import { NewTripInput } from '../../domain/entities/Trip';
 
 test(`Watermelon record's id matches a UUID pattern and equals the returned tripId`, async () => {
   const lokiAdapter = createLokiAdapter();
@@ -23,6 +24,70 @@ test(`Watermelon record's id matches a UUID pattern and equals the returned trip
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   );
   expect(tripIds).toEqual([newTrip.tripId]);
+});
+
+describe('create', () => {
+  test('persists the trip so it is queryable afterward', async () => {
+    const { database, tripRepository } = createContainer(createLokiAdapter());
+    const ownerId = 'user-1';
+
+    const newTrip = await tripRepository.create(
+      { tripName: 'First Trip', destination: 'Tokyo' },
+      ownerId,
+    );
+
+    const record = await database.get<TripModel>('trips').find(newTrip.tripId);
+    expect(record.tripName).toEqual('First Trip');
+    expect(record.destination).toEqual('Tokyo');
+    expect(record.ownerId).toEqual(ownerId);
+    expect(record.isPublic).toBe(false);
+    expect(record.syncState).toEqual('pending');
+    expect(await tripRepository.getById(newTrip.tripId)).toEqual(newTrip);
+  });
+
+  test('generates the tripId, ignoring any caller-supplied one', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const ownerId = 'user-1';
+    const callerSuppliedId = 'caller-supplied-id';
+
+    const newTrip = await tripRepository.create(
+      {
+        tripName: 'First Trip',
+        destination: 'Tokyo',
+        tripId: callerSuppliedId,
+      } as NewTripInput,
+      ownerId,
+    );
+
+    expect(newTrip.tripId).not.toEqual(callerSuppliedId);
+    expect(newTrip.tripId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+  });
+
+  test('returns a Trip matching the domain entity shape', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const ownerId = 'user-1';
+    const before = Date.now();
+
+    const newTrip = await tripRepository.create(
+      { tripName: 'First Trip', destination: 'Tokyo' },
+      ownerId,
+    );
+
+    expect(newTrip).toEqual({
+      tripId: expect.any(String),
+      ownerId,
+      tripName: 'First Trip',
+      destination: 'Tokyo',
+      isPublic: false,
+      clientCreatedAt: expect.any(Number),
+      serverCreatedAt: null,
+      syncStatus: 'pending',
+    });
+    expect(newTrip.clientCreatedAt).toBeGreaterThanOrEqual(before);
+    expect(newTrip.clientCreatedAt).toBeLessThanOrEqual(Date.now());
+  });
 });
 
 // Puts a trip into the 'synced' state, which the repository can't do (create
