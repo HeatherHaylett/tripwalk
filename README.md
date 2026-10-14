@@ -20,8 +20,14 @@ will NOT work — you need a custom dev client. The WatermelonDB Expo config plu
 (`@lovesworking/watermelondb-expo-plugin-sdk-52-plus`) and `expo-build-properties`
 are already configured in `client/app.json`:
 
+Create `client/.env` first (it's gitignored) by copying `client/.env.example`, and set
+`EXPO_PUBLIC_DEV_USER_ID` to the ID of a user that exists on the server you're pointing
+at. This is the temporary stand-in for "the current user" until real auth exists, and
+there is no fallback value.
+
 ```
 cd client
+cp .env.example .env   # then edit EXPO_PUBLIC_DEV_USER_ID
 npx expo run:ios      # or: npx expo run:android
 ```
 
