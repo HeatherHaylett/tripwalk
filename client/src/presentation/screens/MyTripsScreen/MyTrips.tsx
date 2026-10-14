@@ -14,10 +14,11 @@ const renderTripRow: ListRenderItem<Trip> = ({ item }) => {
 }
 
 export default function MyTrips() {
-    const { myTrips } = useMyTripsViewModel(tripRepository);
+    const { myTrips, error } = useMyTripsViewModel(tripRepository);
 
     return (
         <View style={styles.container}>
+            {error ? <Text>{error}</Text> : null}
             <FlatList
                 data={myTrips}
                 renderItem={renderTripRow}
