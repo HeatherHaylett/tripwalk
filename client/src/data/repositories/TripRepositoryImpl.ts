@@ -2,6 +2,7 @@ import { Database, Q } from '@nozbe/watermelondb';
 import { Trip as TripModel } from '../local/models/Trip';
 import { Trip, NewTripInput } from '../../domain/entities/Trip';
 import { TripRepository } from '../../domain/usecases/TripRepository';
+import { map, Observable } from 'rxjs';
 
 function toTrip(model: TripModel): Trip {
   return {
@@ -88,5 +89,13 @@ export class TripRepositoryImpl implements TripRepository {
     if (!record) return null;
 
     return toTrip(record);
+  }
+  observeAll(ownerId: string): Observable<Trip[]> {
+    const tripRecords = this.database
+      .get<TripModel>('trips')
+      .query(Q.where('owner_id', ownerId))
+      .observe();
+
+    return tripRecords.pipe(map((models) => models.map(toTrip)));
   }
 }

@@ -1,9 +1,11 @@
 import { createContainer } from '@/core/di/container';
 import { createLokiAdapter } from '@/test_utils';
 import { Trip as TripModel } from '../local/models/Trip';
+import { Trip } from '@/domain/entities/Trip';
 import { useSessionStore } from '@/core/session/sessionStore';
 import * as Crypto from 'expo-crypto';
 import { Database } from '@nozbe/watermelondb';
+import { waitFor } from '@testing-library/react-native';
 import { NewTripInput } from '../../domain/entities/Trip';
 
 test(`Watermelon record's id matches a UUID pattern and equals the returned tripId`, async () => {
@@ -188,7 +190,7 @@ describe('update', () => {
     };
     const newTrip = await tripRepository.create(tripInput, ownerId);
     await markSynced(database, newTrip.tripId);
-    const resultEmptyObj =await tripRepository.update(newTrip.tripId, {});
+    const resultEmptyObj = await tripRepository.update(newTrip.tripId, {});
     expect(resultEmptyObj.syncStatus).toEqual('synced');
     const resultDestUndefined = await tripRepository.update(newTrip.tripId, {
       destination: undefined,
@@ -271,5 +273,68 @@ describe('getById', () => {
     const foundTrip = await tripRepository.getById(unknownTripId);
 
     expect(foundTrip).toBeNull();
+  });
+});
+
+describe('observeAll', () => {
+  test("emits only the owner's trips and re-emits when one is added", async () => {
+    const lokiAdapter = createLokiAdapter();
+    const { tripRepository } = createContainer(lokiAdapter);
+    const ownerId = 'owner-a';
+    const firstTripUserA = {
+      tripName: 'First Trip',
+      destination: 'Tokyo',
+    };
+    const secondTripUserA = {
+      tripName: 'Second Trip',
+      destination: 'Rome',
+    };
+    const firstTripUserB = {
+      tripName: 'First Trip',
+      destination: 'Paris',
+    };
+    const secondTripUserB = {
+      tripName: 'Second Trip',
+      destination: 'London',
+    };
+
+    await tripRepository.create(firstTripUserA, ownerId);
+    await tripRepository.create(firstTripUserB, 'owner-b');
+    await tripRepository.create(secondTripUserA, ownerId);
+    await tripRepository.create(secondTripUserB, 'owner-b');
+
+    const emissions: Trip[][] = [];
+    const subscription = tripRepository
+      .observeAll(ownerId)
+      .subscribe((trips) => {
+        emissions.push(trips);
+      });
+
+    // Order is unspecified (no sort yet), so compare sorted destinations. They
+    // differ per trip, unlike tripName, so they tell A's trips from B's.
+    const destinations = (trips: Trip[] | undefined) =>
+      (trips ?? []).map((trip) => trip.destination).sort();
+
+    await waitFor(() => expect(emissions.length).toBeGreaterThanOrEqual(1));
+    const initial = emissions[emissions.length - 1];
+    expect(destinations(initial)).toEqual(['Rome', 'Tokyo']);
+    expect(initial?.every((trip) => trip.ownerId === ownerId)).toBe(true);
+
+    await tripRepository.create(
+      { tripName: 'Third Trip', destination: 'Lisbon' },
+      ownerId,
+    );
+
+    await waitFor(() =>
+      expect(destinations(emissions[emissions.length - 1])).toEqual([
+        'Lisbon',
+        'Rome',
+        'Tokyo',
+      ]),
+    );
+    const latest = emissions[emissions.length - 1];
+    expect(latest?.every((trip) => trip.ownerId === ownerId)).toBe(true);
+
+    subscription.unsubscribe();
   });
 });

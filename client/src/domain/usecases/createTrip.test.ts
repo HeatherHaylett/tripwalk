@@ -24,6 +24,7 @@ function createFakeRepository() {
     update: jest.fn(),
     delete: jest.fn(),
     getById: jest.fn(),
+    observeAll: jest.fn(),
   };
   return { repository, createCalls };
 }
