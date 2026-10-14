@@ -16,14 +16,18 @@ npm run server        # starts the Fastify dev server
 ```
 
 For the client, WatermelonDB is a native module, so plain `expo start` / Expo Go
-will NOT work once the local database is wired up — you need a custom dev client:
+will NOT work — you need a custom dev client. The WatermelonDB Expo config plugin
+(`@lovesworking/watermelondb-expo-plugin-sdk-52-plus`) and `expo-build-properties`
+are already configured in `client/app.json`:
+
+Create `client/.env` first (it's gitignored) by copying `client/.env.example`, and set
+`EXPO_PUBLIC_DEV_USER_ID` to the ID of a user that exists on the server you're pointing
+at. This is the temporary stand-in for "the current user" until real auth exists, and
+there is no fallback value.
 
 ```
 cd client
-npx expo install expo-build-properties   # let Expo resolve the right version
-# then find and install an SDK 57-compatible WatermelonDB Expo config plugin
-# (check https://github.com/morrowdigital/watermelondb-expo-plugin or similar
-# for a release that supports SDK 57 before relying on it)
+cp .env.example .env   # then edit EXPO_PUBLIC_DEV_USER_ID
 npx expo run:ios      # or: npx expo run:android
 ```
 
@@ -68,12 +72,21 @@ before any test file loads `server/src/db/db.ts`, so the app's one shared `db`
 client transparently points at the `test` branch during a test run — `db.ts`
 itself has no idea tests exist.
 
+## Tracking progress
+
+Work is tracked in GitHub Issues, grouped into milestones.
+
+Each milestone's description records its dependencies. The intent is to get add, edit and
+delete trips working fully locally first, then connect them to the backend (outbox + sync),
+then build the other features on top of that write path. See
+`gh issue list --state all` or the repo's Milestones page.
+
 ## Status
 
-This is a scaffold, not a working app yet.
+Not a finished app yet. Everything built so far is local-only (offline-first); nothing syncs to the server.
 
-**Client:** Expo SDK 57 / React Native 0.86.3 / React 19.2.3. Folder structure matching `architecture.md` §3, domain entity types matching the schema in §6, a `TripRepository` interface + one example use case (`createTrip`) showing the atomic write+enqueue pattern, and the WatermelonDB schema for all five local tables (including the client-only `syncStatus` field). `App.tsx` is a placeholder with no navigation wired up yet, and the WatermelonDB Expo config plugin still needs to be added (see above) before the local DB will actually run on-device.
+**Client:** Expo SDK 57 / React Native 0.86.3 / React 19.2.3. WatermelonDB schema and models for all five local tables, a DI container, and an injectable in-memory adapter for tests. `TripRepositoryImpl` implements `create`, `update`, `delete` and `getById` with tests, using client-generated UUIDs as the WatermelonDB `id`. The `createTrip` use case and a `NewTrip` screen with its view model exist. `App.tsx` is still a placeholder with no navigation wired up, so no screen is reachable yet. The outbox write is not implemented: the repository methods carry `TODO`s marking where the outbox entry will join the same transaction (`CLAUDE.md` invariant #1).
 
 **Server:** Fastify entry point with a health check route, Postgres schema/migrations (Drizzle), and `/myTrips` (`GET`/`POST`) with Vitest coverage for user-scoping, auth, and validation. `/sync`, `/publicTrips`, `/bookmarks` are not built yet — see `architecture.md` §8 for the intended API surface. Auth is still the dev-only `authStub` header stub (see `CLAUDE.md`'s "Open questions").
 
-Not built yet: repository *implementations* (`client/src/data/repositories/`), the sync engine, any real screens, `/sync`/`/publicTrips`/`/bookmarks`, or real auth.
+**Not built yet:** the outbox and sync engine, the trip list/edit/delete screens, navigation, `/sync`/`/publicTrips`/`/bookmarks`, or real auth.

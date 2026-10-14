@@ -7,10 +7,13 @@ import { create } from 'zustand';
 // need to add a setter here and call it on sign-in — nothing that reads
 // `userId` from this store should need to change.
 //
-// Overridable via EXPO_PUBLIC_DEV_USER_ID (see client/.env) so this can be
-// pointed at a specific seeded user (e.g. one that already exists in a Neon
-// test branch) without editing code. Falls back to a fixed literal so the
-// app still runs with no env setup at all.
+// Required: set EXPO_PUBLIC_DEV_USER_ID in client/.env (see client/.env.example
+// and README.md). It should be the ID of a user that exists on the server you
+// point at (e.g. one seeded in a Neon test branch) so requests actually match
+// a real owner. There is deliberately no fallback value: a made-up ID would
+// silently fail against the server. If it is unset, `userId` is `undefined`
+// (this is also the case under Jest, which does not load .env; tests should
+// pass an explicit ownerId instead of reading this store).
 const DEV_PLACEHOLDER_USER_ID = process.env.EXPO_PUBLIC_DEV_USER_ID;
 
 interface SessionState {

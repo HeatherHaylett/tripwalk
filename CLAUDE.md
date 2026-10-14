@@ -101,6 +101,10 @@ New files should land in the matching folder above — don't invent a parallel s
   - `data/repositories/*` tests exercise a real WatermelonDB instance via an injectable adapter (in-memory for tests — WatermelonDB's own `LokiJSAdapter`, since `SQLiteAdapter` is native-only and can't run under Jest), not a hand-rolled repository double.
   - `domain/usecases/*` tests are the one place a fake `TripRepository` is correct, not a shortcut — the whole point of depending on the repository *interface* (see the layering rule above) is that use-case logic is verifiable without a real database.
 
+## Tracking
+
+Project status lives in GitHub Issues and milestones, not in the docs. Milestones are ordered (see their descriptions and `README.md`'s "Tracking progress"): local trip CRUD first, then outbox/sync, then Itinerary Items and the rest. Don't start work from a later milestone without checking this order.
+
 ## When adding a feature
 
 1. Check `PRD.md` — is this in scope, a non-goal, or a "future idea"? If it's a listed non-goal, confirm with the user before building it.
