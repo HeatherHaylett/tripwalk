@@ -3,6 +3,7 @@ import { createContainer } from '@/core/di/container';
 import { createLokiAdapter } from '@/test_utils';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useSessionStore } from '@/core/session/sessionStore';
+import { TripRepository } from '@/domain/usecases/TripRepository';
 import { useMyTripsViewModel } from './useMyTripsViewModel';
 
 const OWNER_A = 'owner-a';
@@ -116,10 +117,9 @@ test('shows an error instead of crashing when no user is set', async () => {
   expect(result.current.error).toMatch(/EXPO_PUBLIC_DEV_USER_ID/);
 });
 
-test('unsubscribes from observeAll when the screen unmounts', async () => {
-  const { tripRepository } = createContainer(createLokiAdapter());
-  // Wrap the real observable (the real database is still underneath) so the
-  // test can see whether its teardown ran.
+// Wraps the real observable (the real database is still underneath) so a test
+// can see how many subscriptions have been torn down.
+function countTeardowns(tripRepository: TripRepository) {
   let teardowns = 0;
   const realObserveAll = tripRepository.observeAll.bind(tripRepository);
   tripRepository.observeAll = (ownerId) =>
@@ -130,13 +130,56 @@ test('unsubscribes from observeAll when the screen unmounts', async () => {
         subscription.unsubscribe();
       };
     });
+  return () => teardowns;
+}
+
+test('clears the list when the session user goes away', async () => {
+  const { tripRepository } = createContainer(createLokiAdapter());
+  await tripRepository.create(
+    { tripName: 'A Trip', destination: 'Tokyo' },
+    OWNER_A,
+  );
+  const { result } = await renderHook(() =>
+    useMyTripsViewModel(tripRepository),
+  );
+  await waitFor(() => expect(result.current.myTrips).toHaveLength(1));
+
+  await act(async () => {
+    useSessionStore.setState({ userId: undefined as unknown as string });
+  });
+
+  // No new subscription means no new emission, so nothing can overwrite a
+  // stale list: it must be cleared by the hook itself.
+  expect(result.current.myTrips).toEqual([]);
+});
+
+test('tears down the previous subscription when the owner changes', async () => {
+  const { tripRepository } = createContainer(createLokiAdapter());
+  const teardowns = countTeardowns(tripRepository);
+  const { unmount } = await renderHook(() =>
+    useMyTripsViewModel(tripRepository),
+  );
+  expect(teardowns()).toBe(0);
+
+  await act(async () => {
+    useSessionStore.setState({ userId: OWNER_B });
+  });
+  expect(teardowns()).toBe(1);
+
+  await unmount();
+  expect(teardowns()).toBe(2);
+});
+
+test('unsubscribes from observeAll when the screen unmounts', async () => {
+  const { tripRepository } = createContainer(createLokiAdapter());
+  const teardowns = countTeardowns(tripRepository);
 
   const { unmount } = await renderHook(() =>
     useMyTripsViewModel(tripRepository),
   );
-  expect(teardowns).toBe(0);
+  expect(teardowns()).toBe(0);
 
   await unmount();
 
-  expect(teardowns).toBe(1);
+  expect(teardowns()).toBe(1);
 });
