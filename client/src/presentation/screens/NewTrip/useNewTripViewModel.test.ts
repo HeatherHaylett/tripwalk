@@ -1,9 +1,10 @@
 import { TripRepository } from '../../../domain/usecases/TripRepository';
-import { Trip, NewTripInput, SyncStatus } from '../../../domain/entities/Trip';
+import { Trip, NewTripInput } from '../../../domain/entities/Trip';
 import * as Crypto from 'expo-crypto';
 import { renderHook, act } from '@testing-library/react-native';
 import { useNewTripViewModel } from './useNewTripViewModel';
 import { useSessionStore } from '@/core/session/sessionStore';
+import { Observable } from 'rxjs';
 
 export class TripRepositoryTest implements TripRepository {
   lastInput: NewTripInput;
@@ -34,6 +35,9 @@ export class TripRepositoryTest implements TripRepository {
     throw new Error('not implemented');
   }
   async getById(tripId: string): Promise<Trip | null> {
+    throw new Error('not implemented');
+  }
+  observeAll(ownerId: string): Observable<Trip[]> {
     throw new Error('not implemented');
   }
 }
