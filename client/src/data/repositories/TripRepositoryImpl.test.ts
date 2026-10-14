@@ -310,9 +310,14 @@ describe('observeAll', () => {
         emissions.push(trips);
       });
 
+    // Order is unspecified (no sort yet), so compare sorted destinations. They
+    // differ per trip, unlike tripName, so they tell A's trips from B's.
+    const destinations = (trips: Trip[] | undefined) =>
+      (trips ?? []).map((trip) => trip.destination).sort();
+
     await waitFor(() => expect(emissions.length).toBeGreaterThanOrEqual(1));
     const initial = emissions[emissions.length - 1];
-    expect(initial).toHaveLength(2);
+    expect(destinations(initial)).toEqual(['Rome', 'Tokyo']);
     expect(initial?.every((trip) => trip.ownerId === ownerId)).toBe(true);
 
     await tripRepository.create(
@@ -321,7 +326,11 @@ describe('observeAll', () => {
     );
 
     await waitFor(() =>
-      expect(emissions[emissions.length - 1]).toHaveLength(3),
+      expect(destinations(emissions[emissions.length - 1])).toEqual([
+        'Lisbon',
+        'Rome',
+        'Tokyo',
+      ]),
     );
     const latest = emissions[emissions.length - 1];
     expect(latest?.every((trip) => trip.ownerId === ownerId)).toBe(true);
