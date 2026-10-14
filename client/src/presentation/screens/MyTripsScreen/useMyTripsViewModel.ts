@@ -5,7 +5,7 @@ import { useSessionStore } from '@/core/session/sessionStore';
 
 export function useMyTripsViewModel(repository: TripRepository) {
   const [myTrips, setMyTrips] = useState<Trip[]>([]);
-  const ownerId = useSessionStore.getState().userId;
+  const ownerId = useSessionStore((state) => state.userId);
 
   useEffect(() => {
     const newTrips = repository.observeAll(ownerId);
