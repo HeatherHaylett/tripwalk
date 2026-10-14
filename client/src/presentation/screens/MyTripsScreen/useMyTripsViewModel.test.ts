@@ -103,6 +103,19 @@ test('re-subscribes for the new owner when the session user changes', async () =
   );
 });
 
+test('shows an error instead of crashing when no user is set', async () => {
+  const { tripRepository } = createContainer(createLokiAdapter());
+  // EXPO_PUBLIC_DEV_USER_ID unset (always the case under Jest without setState)
+  useSessionStore.setState({ userId: undefined as unknown as string });
+
+  const { result } = await renderHook(() =>
+    useMyTripsViewModel(tripRepository),
+  );
+
+  expect(result.current.myTrips).toEqual([]);
+  expect(result.current.error).toMatch(/EXPO_PUBLIC_DEV_USER_ID/);
+});
+
 test('unsubscribes from observeAll when the screen unmounts', async () => {
   const { tripRepository } = createContainer(createLokiAdapter());
   // Wrap the real observable (the real database is still underneath) so the
