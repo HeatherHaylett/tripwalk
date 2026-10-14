@@ -1,6 +1,6 @@
 import { createContainer } from '@/core/di/container';
 import { createLokiAdapter } from '@/test_utils';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useSessionStore } from '@/core/session/sessionStore';
 import { useMyTripsViewModel } from './useMyTripsViewModel';
 
@@ -32,13 +32,15 @@ test('After hook: show user trips from observeAll', async () => {
   const { result } = await renderHook(() =>
     useMyTripsViewModel(tripRepository),
   );
-  await tripRepository.create(
-    {
-      tripName: 'First Trip',
-      destination: 'Tokyo',
-    },
-    ownerId,
-  );
+  await act(async () => {
+    await tripRepository.create(
+      {
+        tripName: 'First Trip',
+        destination: 'Tokyo',
+      },
+      ownerId,
+    );
+  });
   await waitFor(() =>
     expect(result.current.myTrips[0]?.tripName).toBe('First Trip'),
   );
