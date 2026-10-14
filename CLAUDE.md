@@ -100,6 +100,7 @@ New files should land in the matching folder above — don't invent a parallel s
 - **Don't mock what the test is meant to verify.** Same rule the server already follows (`architecture.md` §10: no mocked Postgres client in `/myTrips` route tests, because user-scoping and the FK constraint are database-level guarantees a mock can't prove) — applied client-side:
   - `data/repositories/*` tests exercise a real WatermelonDB instance via an injectable adapter (in-memory for tests — WatermelonDB's own `LokiJSAdapter`, since `SQLiteAdapter` is native-only and can't run under Jest), not a hand-rolled repository double.
   - `domain/usecases/*` tests are the one place a fake `TripRepository` is correct, not a shortcut — the whole point of depending on the repository *interface* (see the layering rule above) is that use-case logic is verifiable without a real database.
+- **Testing a hook backed by a WatermelonDB `.observe()` query:** follow the recipe in `client/src/data/local/useTripCount.test.ts` (build an in-memory DB, `renderHook`, write a row *during* the test, `waitFor` the re-render). Gotchas: `observeCount()` must be called as `observeCount(false)` — with the default throttling no second emission arrived under Jest (`observe()` is unaffected); and in `@testing-library/react-native` v14, `renderHook` and `waitFor` return Promises, so `await` them.
 
 ## Tracking
 
