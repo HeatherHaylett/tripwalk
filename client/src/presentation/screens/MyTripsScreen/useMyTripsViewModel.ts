@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TripRepository } from '@/domain/usecases/TripRepository';
+import { deleteTrip } from '@/domain/usecases/deleteTrip';
 import { Trip } from '@/domain/entities/Trip';
 import { useCurrentUserId } from '@/core/session/useCurrentUserId';
 
@@ -15,6 +16,7 @@ export function useMyTripsViewModel(repository: TripRepository) {
     trips: NO_TRIPS,
   });
   const [failure, setFailure] = useState<{ ownerId: string } | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
   const { userId: ownerId, error: userError } = useCurrentUserId();
 
   useEffect(() => {
@@ -32,9 +34,18 @@ export function useMyTripsViewModel(repository: TripRepository) {
     return () => sub.unsubscribe();
   }, [repository, ownerId]);
 
+  function requestDelete(tripId: string) {
+    setPendingRemoval(tripId);
+  }
+
+  async function confirmDelete() {
+    if (pendingRemoval) await deleteTrip(repository, pendingRemoval);
+  }
+
   const failed = Boolean(ownerId) && failure?.ownerId === ownerId;
-  const myTrips = !failed && loaded.ownerId === ownerId ? loaded.trips : NO_TRIPS;
+  const myTrips =
+    !failed && loaded.ownerId === ownerId ? loaded.trips : NO_TRIPS;
   const isLoading = Boolean(ownerId) && loaded.ownerId !== ownerId && !failed;
   const error = userError || (failed ? LOAD_FAILED_MESSAGE : '');
-  return { isLoading, error, myTrips };
+  return { isLoading, error, myTrips, confirmDelete, requestDelete };
 }
