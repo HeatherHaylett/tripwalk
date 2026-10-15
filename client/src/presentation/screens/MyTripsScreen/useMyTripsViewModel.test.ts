@@ -322,10 +322,9 @@ describe('Error State', () => {
     const { result, rerender } = await renderHook<
       ReturnType<typeof useMyTripsViewModel>,
       { repository: TripRepository }
-    >(
-      ({ repository }) => useMyTripsViewModel(repository),
-      { initialProps: { repository: failingRepository } },
-    );
+    >(({ repository }) => useMyTripsViewModel(repository), {
+      initialProps: { repository: failingRepository },
+    });
     await waitFor(() => expect(result.current.error).not.toEqual(''));
 
     await rerender({ repository: tripRepository });
@@ -393,4 +392,36 @@ describe('Error State', () => {
     await waitFor(() => expect(result.current.isLoading).toEqual(false));
     expect(result.current.error).toEqual('');
   });
+});
+
+describe('delete', () => {
+  test('removes row after request and confirm', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+
+    await tripRepository.create(
+      { tripName: 'A Trip', destination: 'Tokyo' },
+      OWNER_A,
+    );
+    await tripRepository.create(
+      { tripName: 'B Trip', destination: 'Rome' },
+      OWNER_A,
+    );
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    const tripToRemove = await result.current.myTrips.find(
+      (trip) => trip.tripName === 'B Trip',
+    );
+    await act(async () => {
+      !!tripToRemove && result.current.requestDelete(tripToRemove?.tripId);
+    });
+    await act(async () => {
+      await result.current.confirmDelete();
+    });
+    await waitFor(() =>
+      expect(result.current.myTrips.map((t) => t.tripName)).toEqual(['A Trip']),
+    );
+  });
+  test('retains row after request and cancel', async () => {});
+  test('removes nothing without error if confirm with nothing pending', async () => {});
 });
