@@ -334,6 +334,40 @@ describe('Error State', () => {
     expect(result.current.error).toEqual('');
   });
 
+  test('never renders the old failure when the same owner returns after going away', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    let ownerAFails = true;
+    const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+    tripRepository.observeAll = (ownerId) =>
+      ownerId === OWNER_A && ownerAFails
+        ? throwError(() => new Error('db failed'))
+        : realObserveAll(ownerId);
+    // act() flushes the effect that would correct a stale render, so record
+    // every render to see what the hook actually returned on the way.
+    const renders: ReturnType<typeof useMyTripsViewModel>[] = [];
+    const { result } = await renderHook(() => {
+      const viewModel = useMyTripsViewModel(tripRepository);
+      renders.push(viewModel);
+      return viewModel;
+    });
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+    await act(async () => {
+      useSessionStore.setState({ userId: undefined as unknown as string });
+    });
+    ownerAFails = false;
+    const rendersBeforeReturn = renders.length;
+
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_A });
+    });
+
+    const rendersAfterReturn = renders.slice(rendersBeforeReturn);
+    expect(rendersAfterReturn.length).toBeGreaterThan(0);
+    expect(rendersAfterReturn.map((viewModel) => viewModel.error)).toEqual(
+      rendersAfterReturn.map(() => ''),
+    );
+  });
+
   test('clears an earlier failure when the owner returns and the query now works', async () => {
     const { tripRepository } = createContainer(createLokiAdapter());
     let ownerAFails = true;
