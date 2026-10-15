@@ -107,6 +107,8 @@ New files should land in the matching folder above — don't invent a parallel s
 
 Project status lives in GitHub Issues and milestones, not in the docs. Milestones are ordered (see their descriptions and `README.md`'s "Tracking progress"): local trip CRUD first, then outbox/sync, then Itinerary Items and the rest. Don't start work from a later milestone without checking this order.
 
+**Starting an issue:** create a branch before writing any code or making any commit — never work on `master`. Name it `<issue number>-<short-kebab-slug>` (e.g. `21-my-trips-states`, `16-update-delete-usecases`). One branch per issue; merge via PR.
+
 ## When adding a feature
 
 1. Check `PRD.md` — is this in scope, a non-goal, or a "future idea"? If it's a listed non-goal, confirm with the user before building it.
