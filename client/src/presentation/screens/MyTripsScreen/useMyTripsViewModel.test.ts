@@ -454,5 +454,34 @@ describe('delete', () => {
     );
     await waitFor(() => expect(result.current.pendingRemoval).toBeNull());
   });
-  test('removes nothing without error if confirm with nothing pending', async () => {});
+  test('removes nothing without error if confirm with nothing pending', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+
+    await tripRepository.create(
+      { tripName: 'A Trip', destination: 'Tokyo' },
+      OWNER_A,
+    );
+    await tripRepository.create(
+      { tripName: 'B Trip', destination: 'Rome' },
+      OWNER_A,
+    );
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    // Observes the call without replacing it: the real delete still runs. Needed
+    // because repository.delete on a missing id is a silent no-op, so the list
+    // alone can't show whether confirmDelete tried to delete.
+    const deleteSpy = jest.spyOn(tripRepository, 'delete');
+    await act(async () => {
+      await result.current.confirmDelete();
+    });
+    expect(deleteSpy).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(result.current.myTrips.map((t) => t.tripName)).toEqual([
+        'A Trip',
+        'B Trip',
+      ]),
+    );
+    await waitFor(() => expect(result.current.pendingRemoval).toBeNull());
+  });
 });
