@@ -63,6 +63,17 @@ describe('createTrip', () => {
     expect(createCalls).toHaveLength(0);
   });
 
+  test('rejects a non-string tripName without calling the repository', async () => {
+    const { repository, createCalls } = createFakeRepository();
+    // Deliberately violates the types: guards untyped callers.
+    const input = { tripName: null, destination: 'Tokyo' } as unknown as NewTripInput;
+    await expect(createTrip(repository, input, 'user-1')).rejects.toMatchObject({
+      field: 'tripName',
+      message: TRIP_NAME_REQUIRED,
+    });
+    expect(createCalls).toHaveLength(0);
+  });
+
   test('passes a valid input and the ownerId to repository.create as separate args', async () => {
     const { repository, createCalls } = createFakeRepository();
     const input = { tripName: 'First Trip', destination: 'Tokyo' };
