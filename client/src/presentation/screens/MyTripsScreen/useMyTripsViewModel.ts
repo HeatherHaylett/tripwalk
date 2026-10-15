@@ -42,10 +42,22 @@ export function useMyTripsViewModel(repository: TripRepository) {
     if (pendingRemoval) await deleteTrip(repository, pendingRemoval);
   }
 
+  function cancelDelete() {
+    setPendingRemoval(null);
+  }
+
   const failed = Boolean(ownerId) && failure?.ownerId === ownerId;
   const myTrips =
     !failed && loaded.ownerId === ownerId ? loaded.trips : NO_TRIPS;
   const isLoading = Boolean(ownerId) && loaded.ownerId !== ownerId && !failed;
   const error = userError || (failed ? LOAD_FAILED_MESSAGE : '');
-  return { isLoading, error, myTrips, confirmDelete, requestDelete };
+  return {
+    isLoading,
+    error,
+    myTrips,
+    cancelDelete,
+    confirmDelete,
+    requestDelete,
+    pendingRemoval,
+  };
 }
