@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { Observable, delayWhen } from 'rxjs';
 import { createContainer } from '@/core/di/container';
 import { createLokiAdapter } from '@/test_utils';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -133,6 +133,23 @@ function countTeardowns(tripRepository: TripRepository) {
   return () => teardowns;
 }
 
+// Holds back everything the real query emits for one owner until release() is
+// called, so a test can observe the loading window deterministically instead
+// of racing the in-memory database. The real database is still underneath;
+// only the delivery timing is controlled.
+function holdEmissions(tripRepository: TripRepository, heldOwnerId: string) {
+  let release!: () => void;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+  tripRepository.observeAll = (ownerId) =>
+    ownerId === heldOwnerId
+      ? realObserveAll(ownerId).pipe(delayWhen(() => released))
+      : realObserveAll(ownerId);
+  return release;
+}
+
 test('clears the list when the session user goes away', async () => {
   const { tripRepository } = createContainer(createLokiAdapter());
   await tripRepository.create(
@@ -195,10 +212,16 @@ describe('Loading State', () => {
       { tripName: 'B Trip', destination: 'Rome' },
       OWNER_B,
     );
+    const releaseA = holdEmissions(tripRepository, OWNER_A);
     const { result } = await renderHook(() =>
       useMyTripsViewModel(tripRepository),
     );
+    // A's first emission is held, so this is the loading window, not a race.
     expect(result.current.isLoading).toEqual(true);
+
+    await act(async () => {
+      releaseA();
+    });
     await waitFor(() => expect(result.current.isLoading).toEqual(false));
   });
   test('False for an owner with zero trips, after the first emission', async () => {
@@ -222,6 +245,7 @@ describe('Loading State', () => {
   });
   test('True again after the owner changes, until the new owner first emission arrives', async () => {
     const { tripRepository } = createContainer(createLokiAdapter());
+    const releaseB = holdEmissions(tripRepository, OWNER_B);
     const { result } = await renderHook(() =>
       useMyTripsViewModel(tripRepository),
     );
@@ -229,7 +253,12 @@ describe('Loading State', () => {
     await act(async () => {
       useSessionStore.setState({ userId: OWNER_B });
     });
+    // B's first emission is held, so this is the loading window, not a race.
     expect(result.current.isLoading).toEqual(true);
+
+    await act(async () => {
+      releaseB();
+    });
     await waitFor(() => expect(result.current.isLoading).toEqual(false));
   });
 });

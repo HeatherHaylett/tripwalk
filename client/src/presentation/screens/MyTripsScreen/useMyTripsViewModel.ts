@@ -22,5 +22,6 @@ export function useMyTripsViewModel(repository: TripRepository) {
   }, [repository, ownerId]);
 
   const myTrips = loaded.ownerId === ownerId ? loaded.trips : NO_TRIPS;
-  return { myTrips, error };
+  const isLoading = Boolean(ownerId) && loaded.ownerId !== ownerId;
+  return { isLoading, error, myTrips };
 }
