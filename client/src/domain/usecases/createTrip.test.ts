@@ -1,5 +1,6 @@
 import { createTrip } from './createTrip';
 import { TripRepository } from './TripRepository';
+import { TRIP_NAME_REQUIRED } from './usecases_utils';
 import { Trip, NewTripInput } from '../entities/Trip';
 
 // A fake is correct here (CLAUDE.md Testing): the use case depends only on the
@@ -33,12 +34,31 @@ describe('createTrip', () => {
   test.each([
     ['empty', ''],
     ['whitespace-only', '   \t\n'],
-  ])('rejects an %s tripName without calling the repository', async (_, tripName) => {
-    const { repository, createCalls } = createFakeRepository();
+  ])(
+    'rejects an %s tripName without calling the repository',
+    async (_, tripName) => {
+      const { repository, createCalls } = createFakeRepository();
 
+      await expect(
+        createTrip(repository, { tripName, destination: 'Tokyo' }, 'user-1'),
+      ).rejects.toMatchObject({
+        field: 'tripName',
+        message: TRIP_NAME_REQUIRED,
+      });
+
+      expect(createCalls).toHaveLength(0);
+    },
+  );
+
+  test('rejects no trip name passed in', async () => {
+    const { repository, createCalls } = createFakeRepository();
+    const partialInput: Partial<NewTripInput> = { destination: 'Tokyo' };
     await expect(
-      createTrip(repository, { tripName, destination: 'Tokyo' }, 'user-1'),
-    ).rejects.toThrow('Trip name is required');
+      createTrip(repository, partialInput as NewTripInput, 'user-1'),
+    ).rejects.toMatchObject({
+      field: 'tripName',
+      message: TRIP_NAME_REQUIRED,
+    });
 
     expect(createCalls).toHaveLength(0);
   });

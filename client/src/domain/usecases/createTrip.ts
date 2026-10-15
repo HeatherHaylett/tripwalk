@@ -1,6 +1,7 @@
 import { TripRepository } from './TripRepository';
 import { Trip, NewTripInput } from '../entities/Trip';
-import { validateTripInput } from './usecases_utils';
+import { TRIP_NAME_REQUIRED, validateTripInput } from './usecases_utils';
+import { ValidationError } from '../errors';
 // Storage-agnostic — depends only on the repository interface.
 //
 // IMPORTANT (architecture.md §5, invariant #1 in CLAUDE.md): the repository
@@ -19,6 +20,11 @@ export async function createTrip(
   input: NewTripInput,
   ownerId: string,
 ): Promise<Trip> {
+  // Guards untyped callers: the types require a name, but update's shared
+  // validator allows a missing one.
+  if (input.tripName === undefined) {
+    throw new ValidationError('tripName', TRIP_NAME_REQUIRED);
+  }
   validateTripInput(input);
   return repository.create(input, ownerId);
 }
