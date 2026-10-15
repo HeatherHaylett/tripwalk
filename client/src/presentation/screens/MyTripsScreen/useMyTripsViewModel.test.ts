@@ -1,4 +1,4 @@
-import { Observable, delayWhen } from 'rxjs';
+import { Observable, delayWhen, throwError } from 'rxjs';
 import { createContainer } from '@/core/di/container';
 import { createLokiAdapter } from '@/test_utils';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -260,5 +260,55 @@ describe('Loading State', () => {
       releaseB();
     });
     await waitFor(() => expect(result.current.isLoading).toEqual(false));
+  });
+});
+
+describe('Error State', () => {
+  beforeEach(() => {
+    // The hook logs the real error; keep the test output quiet.
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  // Makes observeAll fail for one owner and behave normally for the others.
+  function failFor(tripRepository: TripRepository, failingOwnerId: string) {
+    const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+    tripRepository.observeAll = (ownerId) =>
+      ownerId === failingOwnerId
+        ? throwError(() => new Error('db failed'))
+        : realObserveAll(ownerId);
+  }
+
+  test('reports a failed query: message set, not loading, no trips', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    failFor(tripRepository, OWNER_A);
+
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+
+    await waitFor(() =>
+      expect(result.current.error).toMatch(/could not load your trips/i),
+    );
+    expect(result.current.isLoading).toEqual(false);
+    expect(result.current.myTrips).toEqual([]);
+  });
+
+  test("does not show one owner's failure to the next owner", async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    failFor(tripRepository, OWNER_A);
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_B });
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.error).toEqual('');
   });
 });
