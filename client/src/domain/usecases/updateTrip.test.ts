@@ -1,5 +1,6 @@
 import { updateTrip } from './updateTrip';
 import { TripRepository } from './TripRepository';
+import { TRIP_NAME_REQUIRED } from './usecases_utils';
 import { Trip, NewTripInput } from '../entities/Trip';
 
 // A fake is correct here (CLAUDE.md Testing): the use case depends only on the
@@ -37,7 +38,7 @@ function createFakeRepository() {
   return { repository, createUpdates };
 }
 
-describe('Update Trip', () => {
+describe('updateTrip', () => {
   test('If trip name is provided, reject empty or whitespace', async () => {
     const { repository, createUpdates } = createFakeRepository();
     const tripId = '00-11-22';
@@ -46,7 +47,24 @@ describe('Update Trip', () => {
         tripName: '',
         destination: 'Tokyo',
       }),
-    ).rejects.toThrow('Trip name is required');
+    ).rejects.toMatchObject({
+      field: 'tripName',
+      message: TRIP_NAME_REQUIRED,
+    });
     expect(createUpdates).toHaveLength(0);
+  });
+  test('Allows updating destination without providing trip name', async () => {
+    const { repository, createUpdates } = createFakeRepository();
+    const tripId = '00-11-22';
+    await updateTrip(repository, tripId, { destination: 'Paris' });
+    expect(createUpdates).toHaveLength(1);
+    expect(createUpdates[0]?.changes.destination).toEqual('Paris');
+  });
+  test('Allows updating trip name without providing destination', async () => {
+    const { repository, createUpdates } = createFakeRepository();
+    const tripId = '00-11-22';
+    await updateTrip(repository, tripId, { tripName: 'New Trip' });
+    expect(createUpdates).toHaveLength(1);
+    expect(createUpdates[0]?.changes.tripName).toEqual('New Trip');
   });
 });
