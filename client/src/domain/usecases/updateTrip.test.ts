@@ -39,7 +39,7 @@ function createFakeRepository() {
 }
 
 describe('updateTrip', () => {
-  test('If trip name is provided, reject empty or whitespace', async () => {
+  test('reject empty or whitespace when tripName is provided', async () => {
     const { repository, createUpdates } = createFakeRepository();
     const tripId = '00-11-22';
     await expect(
@@ -53,18 +53,28 @@ describe('updateTrip', () => {
     });
     expect(createUpdates).toHaveLength(0);
   });
-  test('Allows updating destination without providing trip name', async () => {
+  test('updates destination without providing trip name', async () => {
     const { repository, createUpdates } = createFakeRepository();
     const tripId = '00-11-22';
     await updateTrip(repository, tripId, { destination: 'Paris' });
     expect(createUpdates).toHaveLength(1);
     expect(createUpdates[0]?.changes.destination).toEqual('Paris');
   });
-  test('Allows updating trip name without providing destination', async () => {
+  test('updates trip name without providing destination', async () => {
     const { repository, createUpdates } = createFakeRepository();
     const tripId = '00-11-22';
     await updateTrip(repository, tripId, { tripName: 'New Trip' });
     expect(createUpdates).toHaveLength(1);
     expect(createUpdates[0]?.changes.tripName).toEqual('New Trip');
+  });
+  test('valid changes pass through unchanged', async () => {
+    const { repository, createUpdates } = createFakeRepository();
+    const tripId = '00-11-22';
+    const changes = { tripName: 'New Trip', destination: 'Paris' };
+    await updateTrip(repository, tripId, changes);
+
+    expect(createUpdates).toEqual([
+      { tripId, ...changes, tripName: changes.tripName?.trim() },
+    ]);
   });
 });
