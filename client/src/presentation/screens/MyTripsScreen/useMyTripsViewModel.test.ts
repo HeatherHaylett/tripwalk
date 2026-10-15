@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { Observable, delayWhen, throwError } from 'rxjs';
 import { createContainer } from '@/core/di/container';
 import { createLokiAdapter } from '@/test_utils';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -133,6 +133,23 @@ function countTeardowns(tripRepository: TripRepository) {
   return () => teardowns;
 }
 
+// Holds back everything the real query emits for one owner until release() is
+// called, so a test can observe the loading window deterministically instead
+// of racing the in-memory database. The real database is still underneath;
+// only the delivery timing is controlled.
+function holdEmissions(tripRepository: TripRepository, heldOwnerId: string) {
+  let release!: () => void;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+  tripRepository.observeAll = (ownerId) =>
+    ownerId === heldOwnerId
+      ? realObserveAll(ownerId).pipe(delayWhen(() => released))
+      : realObserveAll(ownerId);
+  return release;
+}
+
 test('clears the list when the session user goes away', async () => {
   const { tripRepository } = createContainer(createLokiAdapter());
   await tripRepository.create(
@@ -182,4 +199,198 @@ test('unsubscribes from observeAll when the screen unmounts', async () => {
   await unmount();
 
   expect(teardowns()).toBe(1);
+});
+
+describe('Loading State', () => {
+  test('True right after mount, false after the first emission', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    await tripRepository.create(
+      { tripName: 'A Trip', destination: 'Tokyo' },
+      OWNER_A,
+    );
+    await tripRepository.create(
+      { tripName: 'B Trip', destination: 'Rome' },
+      OWNER_B,
+    );
+    const releaseA = holdEmissions(tripRepository, OWNER_A);
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    // A's first emission is held, so this is the loading window, not a race.
+    expect(result.current.isLoading).toEqual(true);
+
+    await act(async () => {
+      releaseA();
+    });
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+  });
+  test('False for an owner with zero trips, after the first emission', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.myTrips).toEqual([]);
+  });
+  test('False when the owner is undefined', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    await act(async () => {
+      useSessionStore.setState({ userId: undefined as unknown as string });
+    });
+    expect(result.current.isLoading).toEqual(false);
+  });
+  test('True again after the owner changes, until the new owner first emission arrives', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const releaseB = holdEmissions(tripRepository, OWNER_B);
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_B });
+    });
+    // B's first emission is held, so this is the loading window, not a race.
+    expect(result.current.isLoading).toEqual(true);
+
+    await act(async () => {
+      releaseB();
+    });
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+  });
+});
+
+describe('Error State', () => {
+  beforeEach(() => {
+    // The hook logs the real error; keep the test output quiet.
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  // Makes observeAll fail for one owner and behave normally for the others.
+  function failFor(tripRepository: TripRepository, failingOwnerId: string) {
+    const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+    tripRepository.observeAll = (ownerId) =>
+      ownerId === failingOwnerId
+        ? throwError(() => new Error('db failed'))
+        : realObserveAll(ownerId);
+  }
+
+  test('reports a failed query: message set, not loading, no trips', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    failFor(tripRepository, OWNER_A);
+
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+
+    await waitFor(() =>
+      expect(result.current.error).toMatch(/could not load your trips/i),
+    );
+    expect(result.current.isLoading).toEqual(false);
+    expect(result.current.myTrips).toEqual([]);
+  });
+
+  test("does not show one owner's failure to the next owner", async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    failFor(tripRepository, OWNER_A);
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_B });
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.error).toEqual('');
+  });
+
+  test('clears the failure when the same owner resubscribes to a working repository', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    // Same real database underneath; only observeAll is made to fail.
+    const failingRepository: TripRepository = Object.create(tripRepository);
+    failingRepository.observeAll = () =>
+      throwError(() => new Error('db failed'));
+
+    const { result, rerender } = await renderHook<
+      ReturnType<typeof useMyTripsViewModel>,
+      { repository: TripRepository }
+    >(
+      ({ repository }) => useMyTripsViewModel(repository),
+      { initialProps: { repository: failingRepository } },
+    );
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+
+    await rerender({ repository: tripRepository });
+
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.error).toEqual('');
+  });
+
+  test('never renders the old failure when the same owner returns after going away', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    let ownerAFails = true;
+    const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+    tripRepository.observeAll = (ownerId) =>
+      ownerId === OWNER_A && ownerAFails
+        ? throwError(() => new Error('db failed'))
+        : realObserveAll(ownerId);
+    // act() flushes the effect that would correct a stale render, so record
+    // every render to see what the hook actually returned on the way.
+    const renders: ReturnType<typeof useMyTripsViewModel>[] = [];
+    const { result } = await renderHook(() => {
+      const viewModel = useMyTripsViewModel(tripRepository);
+      renders.push(viewModel);
+      return viewModel;
+    });
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+    await act(async () => {
+      useSessionStore.setState({ userId: undefined as unknown as string });
+    });
+    ownerAFails = false;
+    const rendersBeforeReturn = renders.length;
+
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_A });
+    });
+
+    const rendersAfterReturn = renders.slice(rendersBeforeReturn);
+    expect(rendersAfterReturn.length).toBeGreaterThan(0);
+    expect(rendersAfterReturn.map((viewModel) => viewModel.error)).toEqual(
+      rendersAfterReturn.map(() => ''),
+    );
+  });
+
+  test('clears an earlier failure when the owner returns and the query now works', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    let ownerAFails = true;
+    const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+    tripRepository.observeAll = (ownerId) =>
+      ownerId === OWNER_A && ownerAFails
+        ? throwError(() => new Error('db failed'))
+        : realObserveAll(ownerId);
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_B });
+    });
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    ownerAFails = false;
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_A });
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.error).toEqual('');
+  });
 });

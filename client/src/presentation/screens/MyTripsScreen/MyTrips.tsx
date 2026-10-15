@@ -1,36 +1,10 @@
-import { FlatList, ListRenderItem, StyleSheet, Text, View } from 'react-native';
 import { useMyTripsViewModel } from './useMyTripsViewModel';
+import { MyTripsView } from './MyTripsView';
 import { tripRepository } from '@/core/di/appContainer';
-import { Trip } from '@/domain/entities/Trip';
 
-const keyExtractor = (item: Trip) => item.tripId;
-const renderTripRow: ListRenderItem<Trip> = ({ item }) => {
-    return (
-        <View>
-            <Text>{item.tripName}</Text>
-            <Text>{item.destination}</Text>
-        </View>
-    )
-}
-
+// Wires the viewmodel (and the real repository) to the pure view.
 export default function MyTrips() {
-    const { myTrips, error } = useMyTripsViewModel(tripRepository);
+    const { myTrips, error, isLoading } = useMyTripsViewModel(tripRepository);
 
-    return (
-        <View style={styles.container}>
-            {error ? <Text>{error}</Text> : null}
-            <FlatList
-                data={myTrips}
-                renderItem={renderTripRow}
-                keyExtractor={keyExtractor}
-            />
-        </View>
-    );
+    return <MyTripsView trips={myTrips} error={error} loading={isLoading} />;
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingTop: 200,
-    },
-});
