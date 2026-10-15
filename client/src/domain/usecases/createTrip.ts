@@ -1,6 +1,6 @@
 import { TripRepository } from './TripRepository';
 import { Trip, NewTripInput } from '../entities/Trip';
-
+import { validateTripInput } from './usecases_utils';
 // Storage-agnostic — depends only on the repository interface.
 //
 // IMPORTANT (architecture.md §5, invariant #1 in CLAUDE.md): the repository
@@ -17,14 +17,8 @@ import { Trip, NewTripInput } from '../entities/Trip';
 export async function createTrip(
   repository: TripRepository,
   input: NewTripInput,
-  ownerId: string
+  ownerId: string,
 ): Promise<Trip> {
   validateTripInput(input);
   return repository.create(input, ownerId);
-}
-
-function validateTripInput(input: NewTripInput): void {
-  if (!input.tripName.trim()) {
-    throw new Error('Trip name is required');
-  }
 }
