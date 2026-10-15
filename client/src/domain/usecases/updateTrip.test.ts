@@ -73,8 +73,6 @@ describe('updateTrip', () => {
     const changes = { tripName: 'New Trip', destination: 'Paris' };
     await updateTrip(repository, tripId, changes);
 
-    expect(createUpdates).toEqual([
-      { tripId, ...changes, tripName: changes.tripName?.trim() },
-    ]);
+    expect(createUpdates).toEqual([{ tripId, changes }]);
   });
 });
