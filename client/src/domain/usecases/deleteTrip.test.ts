@@ -17,7 +17,7 @@ function createFakeRepository() {
 describe('deleteTrip', () => {
   test('calls repository.delete with the id', async () => {
     const { repository } = createFakeRepository();
-    await repository.deleteTrip('00-11-22');
+    await deleteTrip(repository, '00-11-22');
     expect(repository.delete).toHaveBeenCalledTimes(1);
     expect(repository.delete).toHaveBeenCalledWith('00-11-22');
   });
