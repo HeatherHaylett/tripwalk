@@ -422,6 +422,37 @@ describe('delete', () => {
       expect(result.current.myTrips.map((t) => t.tripName)).toEqual(['A Trip']),
     );
   });
-  test('retains row after request and cancel', async () => {});
+  test('retains row after request and cancel', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+
+    await tripRepository.create(
+      { tripName: 'A Trip', destination: 'Tokyo' },
+      OWNER_A,
+    );
+    await tripRepository.create(
+      { tripName: 'B Trip', destination: 'Rome' },
+      OWNER_A,
+    );
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    const tripToRemove = await result.current.myTrips.find(
+      (trip) => trip.tripName === 'B Trip',
+    );
+    await expect(tripToRemove).toBeDefined();
+    await act(async () => {
+      result.current.requestDelete(tripToRemove!.tripId);
+    });
+    await act(async () => {
+      await result.current.cancelDelete();
+    });
+    await waitFor(() =>
+      expect(result.current.myTrips.map((t) => t.tripName)).toEqual([
+        'A Trip',
+        'B Trip',
+      ]),
+    );
+    await waitFor(() => expect(result.current.pendingRemoval).toBeNull());
+  });
   test('removes nothing without error if confirm with nothing pending', async () => {});
 });
