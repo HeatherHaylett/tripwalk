@@ -6,6 +6,7 @@ import { useCurrentUserId } from '@/core/session/useCurrentUserId';
 
 const NO_TRIPS: Trip[] = [];
 const LOAD_FAILED_MESSAGE = 'Could not load your trips.';
+const DELETE_FAILED_MESSAGE = 'Could not delete the trip. Please try again.';
 
 export function useMyTripsViewModel(repository: TripRepository) {
   // Both the loaded list and a failure are stored with the owner they belong
@@ -17,6 +18,7 @@ export function useMyTripsViewModel(repository: TripRepository) {
   });
   const [failure, setFailure] = useState<{ ownerId: string } | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
   const { userId: ownerId, error: userError } = useCurrentUserId();
 
   useEffect(() => {
@@ -35,11 +37,22 @@ export function useMyTripsViewModel(repository: TripRepository) {
   }, [repository, ownerId]);
 
   function requestDelete(tripId: string) {
+    setDeleteError('');
     setPendingRemoval(tripId);
   }
 
+  // Resolves even when the delete fails: the failure is reported through
+  // `deleteError` (not `error`, which replaces the list) and the row stays.
   async function confirmDelete() {
-    if (pendingRemoval) await deleteTrip(repository, pendingRemoval);
+    if (!pendingRemoval) return;
+    try {
+      await deleteTrip(repository, pendingRemoval);
+    } catch (err) {
+      console.error('Deleting trip failed', err);
+      setDeleteError(DELETE_FAILED_MESSAGE);
+    } finally {
+      setPendingRemoval(null);
+    }
   }
 
   function cancelDelete() {
@@ -59,5 +72,6 @@ export function useMyTripsViewModel(repository: TripRepository) {
     confirmDelete,
     requestDelete,
     pendingRemoval,
+    deleteError,
   };
 }
