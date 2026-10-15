@@ -484,4 +484,81 @@ describe('delete', () => {
     );
     await waitFor(() => expect(result.current.pendingRemoval).toBeNull());
   });
+
+  async function renderWithTwoTrips() {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    await tripRepository.create(
+      { tripName: 'A Trip', destination: 'Tokyo' },
+      OWNER_A,
+    );
+    await tripRepository.create(
+      { tripName: 'B Trip', destination: 'Rome' },
+      OWNER_A,
+    );
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.myTrips).toHaveLength(2));
+    const tripB = result.current.myTrips.find((t) => t.tripName === 'B Trip')!;
+    return { tripRepository, result, tripBId: tripB.tripId };
+  }
+
+  test('clears the pending trip after a successful confirm', async () => {
+    const { result, tripBId } = await renderWithTwoTrips();
+
+    await act(async () => {
+      result.current.requestDelete(tripBId);
+    });
+    await act(async () => {
+      await result.current.confirmDelete();
+    });
+
+    await waitFor(() => expect(result.current.pendingRemoval).toBeNull());
+    expect(result.current.deleteError).toEqual('');
+  });
+
+  test('when delete fails: sets deleteError, keeps the row, clears pending', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { tripRepository, result, tripBId } = await renderWithTwoTrips();
+    jest
+      .spyOn(tripRepository, 'delete')
+      .mockRejectedValue(new Error('db failed'));
+
+    await act(async () => {
+      result.current.requestDelete(tripBId);
+    });
+    await act(async () => {
+      await result.current.confirmDelete();
+    });
+
+    expect(result.current.deleteError).not.toEqual('');
+    expect(result.current.pendingRemoval).toBeNull();
+    expect(result.current.myTrips.map((t) => t.tripName)).toEqual([
+      'A Trip',
+      'B Trip',
+    ]);
+    // A failed delete is not a failed load: the list error stays empty.
+    expect(result.current.error).toEqual('');
+  });
+
+  test('a new delete request clears the previous deleteError', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { tripRepository, result, tripBId } = await renderWithTwoTrips();
+    jest
+      .spyOn(tripRepository, 'delete')
+      .mockRejectedValueOnce(new Error('db failed'));
+    await act(async () => {
+      result.current.requestDelete(tripBId);
+    });
+    await act(async () => {
+      await result.current.confirmDelete();
+    });
+    expect(result.current.deleteError).not.toEqual('');
+
+    await act(async () => {
+      result.current.requestDelete(tripBId);
+    });
+
+    expect(result.current.deleteError).toEqual('');
+  });
 });
