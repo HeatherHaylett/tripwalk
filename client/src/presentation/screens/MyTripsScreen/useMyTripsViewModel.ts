@@ -18,8 +18,10 @@ export function useMyTripsViewModel(repository: TripRepository) {
   const { userId: ownerId, error: userError } = useCurrentUserId();
 
   useEffect(() => {
-    if (!ownerId) return;
+    // Clear before the no-owner return, so a failure can't outlive the owner
+    // it belonged to and flash when that owner comes back.
     setFailure(null);
+    if (!ownerId) return;
     const sub = repository.observeAll(ownerId).subscribe({
       next: (trips) => setLoaded({ ownerId, trips }),
       error: (err) => {
