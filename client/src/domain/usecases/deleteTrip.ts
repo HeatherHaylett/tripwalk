@@ -4,5 +4,9 @@ export async function deleteTrip(
   repository: TripRepository,
   tripId: string,
 ): Promise<void> {
-  await repository.delete(tripId);
+  try {
+    await repository.delete(tripId);
+  } catch {
+    // swallowed: deliberately wrong, so the propagation test fails (red)
+  }
 }
