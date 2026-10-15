@@ -38,30 +38,28 @@ test('renders the error message when there is one', async () => {
     <MyTripsView trips={[]} error="No user is set." loading={false} />,
   );
 
-  expect(screen.getByTestId('my-trips-error')).toHaveTextContent(
-    'No user is set.',
-  );
+  expect(screen.getByRole('alert')).toHaveTextContent('No user is set.');
 });
 
 test('renders no error element when there is no error', async () => {
   await render(<MyTripsView trips={[]} error="" loading={false} />);
 
-  // Any error text would live in this element, so its absence rules out every
+  // Any error message is rendered as an alert, so its absence rules out every
   // message, not just one particular string.
-  expect(screen.queryByTestId('my-trips-error')).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
 describe('loading state', () => {
   test('shows a loading indicator while loading', async () => {
     await render(<MyTripsView trips={[]} error="" loading={true} />);
 
-    expect(screen.getByLabelText(LOADING_LABEL)).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: LOADING_LABEL })).toBeTruthy();
   });
 
   test('does not show a loading indicator once loaded', async () => {
     await render(<MyTripsView trips={[]} error="" loading={false} />);
 
-    expect(screen.queryByLabelText(LOADING_LABEL)).toBeNull();
+    expect(screen.queryByRole('progressbar')).toBeNull();
   });
 });
 

@@ -311,4 +311,52 @@ describe('Error State', () => {
     await waitFor(() => expect(result.current.isLoading).toEqual(false));
     expect(result.current.error).toEqual('');
   });
+
+  test('clears the failure when the same owner resubscribes to a working repository', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    // Same real database underneath; only observeAll is made to fail.
+    const failingRepository: TripRepository = Object.create(tripRepository);
+    failingRepository.observeAll = () =>
+      throwError(() => new Error('db failed'));
+
+    const { result, rerender } = await renderHook<
+      ReturnType<typeof useMyTripsViewModel>,
+      { repository: TripRepository }
+    >(
+      ({ repository }) => useMyTripsViewModel(repository),
+      { initialProps: { repository: failingRepository } },
+    );
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+
+    await rerender({ repository: tripRepository });
+
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.error).toEqual('');
+  });
+
+  test('clears an earlier failure when the owner returns and the query now works', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    let ownerAFails = true;
+    const realObserveAll = tripRepository.observeAll.bind(tripRepository);
+    tripRepository.observeAll = (ownerId) =>
+      ownerId === OWNER_A && ownerAFails
+        ? throwError(() => new Error('db failed'))
+        : realObserveAll(ownerId);
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.error).not.toEqual(''));
+
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_B });
+    });
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    ownerAFails = false;
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_A });
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.error).toEqual('');
+  });
 });

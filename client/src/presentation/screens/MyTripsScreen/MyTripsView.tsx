@@ -30,8 +30,14 @@ interface MyTripsViewProps {
 export function MyTripsView({ trips, error, loading }: MyTripsViewProps) {
   return (
     <View style={styles.container}>
-      {error ? <Text testID="my-trips-error">{error}</Text> : null}
-      {loading ? <ActivityIndicator accessibilityLabel="Loading trips" /> : null}
+      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
+      {loading ? (
+        <ActivityIndicator
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel="Loading trips"
+        />
+      ) : null}
       <FlatList
         data={trips}
         renderItem={renderTripRow}
