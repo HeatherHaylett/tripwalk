@@ -183,3 +183,53 @@ test('unsubscribes from observeAll when the screen unmounts', async () => {
 
   expect(teardowns()).toBe(1);
 });
+
+describe('Loading State', () => {
+  test('True right after mount, false after the first emission', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    await tripRepository.create(
+      { tripName: 'A Trip', destination: 'Tokyo' },
+      OWNER_A,
+    );
+    await tripRepository.create(
+      { tripName: 'B Trip', destination: 'Rome' },
+      OWNER_B,
+    );
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    expect(result.current.isLoading).toEqual(true);
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+  });
+  test('False for an owner with zero trips, after the first emission', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    expect(result.current.myTrips).toEqual([]);
+  });
+  test('False when the owner is undefined', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    await act(async () => {
+      useSessionStore.setState({ userId: undefined as unknown as string });
+    });
+    expect(result.current.isLoading).toEqual(false);
+  });
+  test('True again after the owner changes, until the new owner first emission arrives', async () => {
+    const { tripRepository } = createContainer(createLokiAdapter());
+    const { result } = await renderHook(() =>
+      useMyTripsViewModel(tripRepository),
+    );
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+    await act(async () => {
+      useSessionStore.setState({ userId: OWNER_B });
+    });
+    expect(result.current.isLoading).toEqual(true);
+    await waitFor(() => expect(result.current.isLoading).toEqual(false));
+  });
+});
